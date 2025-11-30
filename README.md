@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WatchWise — Interactive AI Video Learning Platform
 
-## Getting Started
+![Project Status](https://img.shields.io/badge/Status-In%20Development-orange)
+![License](https://img.shields.io/badge/License-MIT-blue)
 
-First, run the development server:
+**WatchWise** — это веб-платформа, которая трансформирует пассивный просмотр образовательных видео (YouTube, VK Video) в активный процесс обучения. Система использует технологии искусственного интеллекта для автоматической генерации конспектов, тестов и флеш-карточек, а также реализует уникальную механику «Умной паузы».
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+> Проект разрабатывается в рамках Выпускной Квалификационной Работы (ВКР).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🌟 Основные возможности
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Мультиплатформенность:** Поддержка видео с YouTube и VK Video.
+- **AI-Генерация контента:**
+  - **Конспект (Summary):** Структурированная выжимка ключевых идей видео.
+  - **Интерактивные тесты:** Вопросы генерируются с привязкой к конкретным моментам видео.
+  - **Флеш-карточки:** Карточки для запоминания терминов и определений.
+- **Умная пауза (Smart Pause):** Видеоплеер автоматически останавливается в ключевые моменты, предлагая ответить на вопрос по пройденному материалу.
+- **Личный кабинет:** Отслеживание прогресса обучения, история просмотров и статистика успеваемости.
+- **Режимы обучения:** Гибкая настройка генерации (режим студента/преподавателя).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠 Технологический стек
 
-## Learn More
+Проект построен на современной модульной архитектуре с использованием Fullstack-возможностей Next.js.
 
-To learn more about Next.js, take a look at the following resources:
+### Frontend & Backend
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Framework:** [Next.js 15](https://nextjs.org/) (App Router)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
+- **State Management:** [Zustand](https://github.com/pmndrs/zustand)
+- **Auth:** [NextAuth.js](https://next-auth.js.org/) (v5)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Data & Infrastructure
 
-## Deploy on Vercel
+- **Database:** [PostgreSQL](https://www.postgresql.org/)
+- **ORM:** [Prisma](https://www.prisma.io/)
+- **Containerization:** [Docker](https://www.docker.com/) & Docker Compose
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### AI & External Services
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **ASR (Speech-to-Text):** [Yandex SpeechKit](https://cloud.yandex.ru/services/speechkit) (для VK Video)
+- **LLM (Text Analysis):** [YandexGPT](https://cloud.yandex.ru/services/yandexgpt) / GigaChat
+- **Storage:** Yandex Object Storage (S3)
+
+## 🚀 Запуск проекта локально
+
+Для запуска вам понадобятся установленные **Node.js** (v18+) и **Docker**.
+
+1.  **Клонируйте репозиторий:**
+
+    ```bash
+    git clone [https://github.com/your-username/watch-wise.git](https://github.com/your-username/watch-wise.git)
+    cd watch-wise
+    ```
+
+2.  **Установите зависимости:**
+
+    ```bash
+    npm install
+    ```
+
+3.  **Настройте переменные окружения:**
+    Создайте файл `.env` в корне проекта на основе `.env.example` и заполните необходимые ключи (Database URL, API Keys).
+
+4.  **Запустите базу данных (через Docker):**
+
+    ```bash
+    docker compose up -d
+    ```
+
+5.  **Выполните миграции БД:**
+
+    ```bash
+    npx prisma migrate dev
+    ```
+
+6.  **Запустите проект:**
+    ```bash
+    npm run dev
+    ```
+
+Откройте [http://localhost:3000](http://localhost:3000) в браузере.
+
+## 📂 Структура проекта описана в файле docs/architecture.md
