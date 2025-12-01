@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- NextAuth Models (Обязательно для OAuth) ---
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // Для Credentials провайдера
+  role          String    @default("user") // 'user' | 'admin'
+  
+  accounts      Account[]
+  sessions      Session[]
+  
+  // Связи приложения
+  generations   GeneratedContent[]
+  testResults   TestResult[]
+  progress      VideoProgress[] // История просмотров
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Видео (Кэш) ---
+model Video {
+  id          String   @id @default(cuid())
+  url         String   @unique
+  platform    String   // 'youtube' | 'vk'
+  externalId  String?
+  title       String?
+  thumbnail   String?
+  duration    Int?
+  
+  // Транскрипт хранится как JSONB (оптимизировано в Postgres)
+  transcript  Json?    
+  
+  createdAt   DateTime @default(now())
+  
+  generatedContents GeneratedContent[]
+  progress          VideoProgress[]
+}
+
+// --- Прогресс просмотра ---
+model VideoProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  videoId   String
+  timestamp Int      // На какой секунде остановился
+  isCompleted Boolean @default(false)
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+}
+
+// --- Сгенерированный Контент ---
+model GeneratedContent {
+  id          String   @id @default(cuid())
+  difficulty  String   // 'easy', 'medium', 'hard'
+  mode        String   // 'student', 'teacher'
+  summary     String   @db.Text
+  
+  createdAt   DateTime @default(now())
+  
+  userId      String
+  videoId     String
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  
+  flashcards  Flashcard[]
+  questions   QuizQuestion[]
+  testResults TestResult[]
+}
+
+model Flashcard {
+  id          String   @id @default(cuid())
+  term        String
+  definition  String   @db.Text
+  
+  contentId   String
+  content     GeneratedContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+}
+
+model QuizQuestion {
+  id          String   @id @default(cuid())
+  text        String   @db.Text
+  timestamp   Int      
+  options     Json     
+  correctIdx  Int      
+  explanation String?  @db.Text
+  
+  contentId   String
+  content     GeneratedContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+}
+
+model TestResult {
+  id          String   @id @default(cuid())
+  score       Int      
+  total       Int      
+  completedAt DateTime @default(now())
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  contentId   String
+  content     GeneratedContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+}
