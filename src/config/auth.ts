@@ -4,22 +4,20 @@ import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import prisma from '@/config/prisma';
+import { authConfig } from '@/config/auth.config';
 
-// Схема валидации для входа
 const signInSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig, // Подключаем легкий конфиг
   adapter: PrismaAdapter(prisma),
-  session: { strategy: 'jwt' }, // Используем JWT, так как это проще для Credentials
-  pages: {
-    signIn: '/login', // Эту страницу сделаем позже
-  },
+  session: { strategy: 'jwt' },
   providers: [
     Credentials({
-      name: 'Email and Password',
+      name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
@@ -27,9 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       authorize: async (credentials) => {
         const parsedCredentials = signInSchema.safeParse(credentials);
 
-        if (!parsedCredentials.success) {
-          return null;
-        }
+        if (!parsedCredentials.success) return null;
 
         const { email, password } = parsedCredentials.data;
 
@@ -37,32 +33,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email },
         });
 
-        if (!user || !user.password) {
-          return null;
-        }
+        if (!user || !user.password) return null;
 
         const passwordsMatch = await bcrypt.compare(password, user.password);
 
-        if (passwordsMatch) {
-          return user;
-        }
+        if (passwordsMatch) return user;
 
         return null;
       },
     }),
-    // Сюда можно будет легко добавить GoogleProvider позже
   ],
-  callbacks: {
-    // Расширяем сессию, добавляя ID пользователя и роль
-    async session({ session, token }) {
-      if (token.sub && session.user) {
-        session.user.id = token.sub;
-      }
-      // Примечание: роль можно вытащить из базы, если нужно будет для админки
-      return session;
-    },
-    async jwt({ token }) {
-      return token;
-    },
-  },
 });

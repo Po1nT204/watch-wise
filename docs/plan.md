@@ -27,8 +27,8 @@
   - [x] Настройка Docker Compose для PostgreSQL.
 - [ ] **2.2. База данных и Auth:**
   - [x] Описание схемы `schema.prisma` (Users, Videos, Transcripts, Quizzes).
-  - [ ] Настройка NextAuth.js (Google/GitHub/Credentials provider).
-  - [ ] Реализация защищенных роутов (Middleware).
+  - [x] Настройка NextAuth.js (email/Google/GitHub/Credentials provider).
+  - [x] Реализация защищенных роутов (Middleware).
 - [ ] **2.3. Базовый UI (Frontend):**
   - [ ] Layouts (Header, Sidebar).
   - [ ] Личный кабинет пользователя (список видео).
