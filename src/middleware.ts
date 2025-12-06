@@ -4,7 +4,7 @@ import { authConfig } from '@/config/auth.config';
 // Инициализируем NextAuth только с легким конфигом для Middleware
 const { auth } = NextAuth(authConfig);
 
-export default auth((req) => {
+export default auth(() => {
   // Вся логика редиректов теперь внутри authConfig.callbacks.authorized
   // Middleware просто вызывает эту логику
 });
