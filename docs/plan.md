@@ -30,7 +30,7 @@
   - [x] Настройка NextAuth.js (email/Google/GitHub/Credentials provider).
   - [x] Реализация защищенных роутов (Middleware).
 - [ ] **2.3. Базовый UI (Frontend):**
-  - [ ] Layouts (Header, Sidebar).
+  - [x] Layouts (Header, Sidebar).
   - [ ] Личный кабинет пользователя (список видео).
 
 ## Этап 3: Ядро системы (AI Pipeline & Video)
