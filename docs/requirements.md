@@ -71,6 +71,7 @@
 - **Database:** PostgreSQL.
 - **ORM:** Prisma.
 - **Infrastructure:** Docker & Docker Compose (для локального развертывания БД).
+- **Разметка и SEO** Семантическая верстка элементов и улучшение SEO.
 
 ### 4.2. Производительность и UX
 
