@@ -6,11 +6,24 @@ export const getVideosByUserId = async (userId: string) => {
     // То есть: "Дай мне видео, у которых есть хотя бы одна генерация, принадлежащая этому юзеру"
     const videos = await prisma.video.findMany({
       where: {
-        generatedContents: {
-          some: {
-            userId: userId,
+        OR: [
+          // Видео, где есть сгенерированный контент пользователя
+          {
+            generatedContents: {
+              some: {
+                userId: userId,
+              },
+            },
           },
-        },
+          // ИЛИ видео, которые пользователь начал смотреть/добавил (Progress)
+          {
+            progress: {
+              some: {
+                userId: userId,
+              },
+            },
+          },
+        ],
       },
       orderBy: {
         createdAt: 'desc',

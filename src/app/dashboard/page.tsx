@@ -17,6 +17,7 @@ import {
 import { redirect } from 'next/navigation';
 import { getVideosByUserId } from '@/services/video';
 import { Button } from '@/components/ui/button';
+import { AddVideoDialog } from '@/components/features/video/add-video-dialog';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -33,10 +34,12 @@ export default async function DashboardPage() {
         <h1 className='text-lg font-semibold md:text-2xl'>Личный кабинет</h1>
 
         {/* Кнопка добавления (пока не работает, но уже есть в UI) */}
-        <Button>
-          <PlusCircle className='mr-2 h-4 w-4' />
-          Добавить видео
-        </Button>
+        <AddVideoDialog>
+          <Button>
+            <PlusCircle className='mr-2 h-4 w-4' />
+            Добавить видео
+          </Button>
+        </AddVideoDialog>
       </div>
 
       {/* --- БЛОК СТАТИСТИКИ --- */}
@@ -93,6 +96,12 @@ export default async function DashboardPage() {
                   Вы еще не добавили ни одного видео. Нажмите кнопку `Добавить
                   видео` сверху, чтобы начать.
                 </p>
+                <AddVideoDialog>
+                  <Button size='lg' variant='outline'>
+                    <PlusCircle className='mr-2 h-4 w-4' />
+                    Добавить первое видео
+                  </Button>
+                </AddVideoDialog>
               </div>
             ) : (
               // --- СПИСОК ВИДЕО (Реальные данные) ---
