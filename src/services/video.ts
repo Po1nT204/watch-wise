@@ -45,3 +45,35 @@ export const getVideosByUserId = async (userId: string) => {
     return [];
   }
 };
+
+export const getVideoById = async (videoId: string, userId: string) => {
+  try {
+    const video = await prisma.video.findFirst({
+      where: {
+        id: videoId,
+        // Проверяем, что пользователь имеет отношение к этому видео
+        // (либо есть прогресс, либо сгенерированный контент)
+        OR: [
+          { progress: { some: { userId } } },
+          { generatedContents: { some: { userId } } },
+        ],
+      },
+      include: {
+        progress: {
+          where: { userId },
+          take: 1,
+        },
+        // Подтягиваем сгенерированный контент для этого юзера
+        generatedContents: {
+          where: { userId },
+          take: 1,
+        },
+      },
+    });
+
+    return video;
+  } catch (error) {
+    console.error('Ошибка при получении видео:', error);
+    return null;
+  }
+};

@@ -8,7 +8,6 @@ import {
 } from '@/components/ui/card';
 import {
   Activity,
-  Link,
   PlayCircle,
   PlusCircle,
   Users,
@@ -18,6 +17,7 @@ import { redirect } from 'next/navigation';
 import { getVideosByUserId } from '@/services/video';
 import { Button } from '@/components/ui/button';
 import { AddVideoDialog } from '@/components/features/video/add-video-dialog';
+import Link from 'next/link';
 
 export default async function DashboardPage() {
   const session = await auth();
