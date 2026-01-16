@@ -64,11 +64,19 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+enum VideoStatus {
+  PENDING     // В очереди
+  PROCESSING  // Скачиваем/Транскрибируем
+  COMPLETED   // Готово
+  FAILED      // Ошибка (видео удалено или API упал)
+}
+
 // --- Видео (Кэш) ---
 model Video {
   id          String   @id @default(cuid())
   url         String   @unique
   platform    String   // 'youtube' | 'vk'
+  status      VideoStatus @default(PENDING)
   externalId  String?
   title       String?
   thumbnail   String?
