@@ -14,3 +14,13 @@ export const LoginSchema = z.object({
   email: z.string().email({ message: 'Введите корректный Email' }),
   password: z.string().min(1, { message: 'Введите пароль' }),
 });
+
+export const VideoUrlSchema = z.object({
+  url: z
+    .string()
+    .min(1, { message: 'Введите ссылку' })
+    .url({ message: 'Введите корректный URL' })
+    .regex(/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/, {
+      message: 'Поддерживаются только ссылки на YouTube',
+    }),
+});
