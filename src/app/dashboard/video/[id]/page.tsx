@@ -23,12 +23,11 @@ export default async function VideoPage({ params }: VideoPageProps) {
   const video = await getVideoById(id, session.user.id);
 
   if (!video) {
-    notFound(); // Покажет стандартную 404 страницу Next.js
+    notFound();
   }
 
   return (
     <div className='flex flex-col h-[calc(100vh-4rem)]'>
-      {/* Верхняя панель навигации */}
       <div className='flex items-center gap-4 border-b p-4'>
         <Button variant='ghost' size='icon' asChild>
           <Link href='/dashboard'>
@@ -47,20 +46,18 @@ export default async function VideoPage({ params }: VideoPageProps) {
           </div>
         </div>
         <Badge variant='secondary'>
-          {video.generatedContents.length > 0
+          {video.generatedContents && video.generatedContents.length > 0
             ? 'Обработано'
             : 'Ожидает анализа'}
         </Badge>
       </div>
 
-      {/* Основной контент: 2 колонки на больших экранах */}
       <div className='flex-1 overflow-hidden p-4 md:p-6'>
         <div className='grid h-full gap-6 md:grid-cols-[1.5fr_1fr]'>
-          {/* Левая колонка: Плеер */}
           <div className='flex flex-col gap-4'>
-            {video.externalId && <VideoPlayer videoId={video.externalId} />}
+            {/* Исправлено: передаем video.url вместо videoId */}
+            <VideoPlayer url={video.url} />
 
-            {/* Место под кнопки действий (например, "Перегенерировать") */}
             <div className='p-4 bg-muted/30 rounded-lg border'>
               <p className='text-sm font-medium'>Управление анализом</p>
               <p className='text-xs text-muted-foreground mt-1'>
@@ -69,7 +66,6 @@ export default async function VideoPage({ params }: VideoPageProps) {
             </div>
           </div>
 
-          {/* Правая колонка: Табы с AI */}
           <div className='h-full overflow-hidden rounded-xl border bg-background shadow-sm'>
             <VideoTabs />
           </div>
