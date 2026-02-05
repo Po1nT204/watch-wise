@@ -87,6 +87,7 @@ model Video {
   
   createdAt   DateTime @default(now())
   
+  transcriptChunks  TranscriptChunk[]
   generatedContents GeneratedContent[]
   progress          VideoProgress[]
 }
@@ -124,6 +125,8 @@ model GeneratedContent {
   flashcards  Flashcard[]
   questions   QuizQuestion[]
   testResults TestResult[]
+
+  @@index([videoId, userId]) // Для быстрого получения контента юзера по видео
 }
 
 model Flashcard {
@@ -138,13 +141,15 @@ model Flashcard {
 model QuizQuestion {
   id          String   @id @default(cuid())
   text        String   @db.Text
-  timestamp   Int      
+  timestamp   Float     
   options     Json     
   correctIdx  Int      
   explanation String?  @db.Text
   
   contentId   String
   content     GeneratedContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
 }
 
 model TestResult {
@@ -158,4 +163,16 @@ model TestResult {
   
   contentId   String
   content     GeneratedContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+}
+
+model TranscriptChunk {
+  id        String   @id @default(cuid())
+  videoId   String
+  startTime Float    // Время в секундах (с точностью до мс)
+  endTime   Float
+  text      String   @db.Text
+
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId]) // Индекс для быстрого поиска субтитров к видео
 }
