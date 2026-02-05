@@ -44,6 +44,7 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
         externalId: videoId,
         thumbnail: getYoutubeThumbnail(videoId),
         title: videoTitle,
+        status: 'PENDING', // Видео создано, но еще не анализировалось
       },
     });
 
