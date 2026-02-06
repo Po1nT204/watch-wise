@@ -29,8 +29,12 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
 
   try {
     // 1. Создаем или обновляем само видео в базе (Video)
-    // Мы пока не знаем название (Title), его парсинг сделаем позже или клиент сам подтянет.
-    // Пока запишем URL и ID.
+    const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+    const response = await fetch(oembedUrl);
+    const metadata = response.ok ? await response.json() : null;
+
+    const videoTitle = metadata?.title || `YouTube Video ${videoId}`;
+
     const video = await prisma.video.upsert({
       where: { url: url },
       update: {}, // Если видео есть, ничего не меняем пока
@@ -39,7 +43,8 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
         platform: 'youtube',
         externalId: videoId,
         thumbnail: getYoutubeThumbnail(videoId),
-        title: `YouTube Video ${videoId}`, // Временное название, потом заменим на реальное
+        title: videoTitle,
+        status: 'PENDING', // Видео создано, но еще не анализировалось
       },
     });
 
