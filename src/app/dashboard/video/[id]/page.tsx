@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { AnalysisControl } from '@/components/features/video/analysis-control';
 
 interface VideoPageProps {
   params: Promise<{ id: string }>;
@@ -55,14 +56,11 @@ export default async function VideoPage({ params }: VideoPageProps) {
       <div className='flex-1 overflow-hidden p-4 md:p-6'>
         <div className='grid h-full gap-6 md:grid-cols-[1.5fr_1fr]'>
           <div className='flex flex-col gap-4'>
-            {/* Исправлено: передаем video.url вместо videoId */}
             <VideoPlayer url={video.url} />
 
             <div className='p-4 bg-muted/30 rounded-lg border'>
-              <p className='text-sm font-medium'>Управление анализом</p>
-              <p className='text-xs text-muted-foreground mt-1'>
-                Здесь будут кнопки для запуска Yandex SpeechKit
-              </p>
+              <p className='text-sm font-medium mb-3'>Управление анализом</p>
+              <AnalysisControl videoId={video.id} status={video.status} />
             </div>
           </div>
 

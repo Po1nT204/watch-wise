@@ -77,3 +77,20 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
     return { error: 'Ошибка при добавлении видео' };
   }
 };
+
+export const startAnalysis = async (videoId: string) => {
+  const session = await auth();
+  if (!session?.user?.id) return { error: 'Не авторизован' };
+
+  try {
+    // Импортируем наш мок-сервис
+    const { simulateVideoAnalysis } = await import('@/services/ai-mock');
+    await simulateVideoAnalysis(videoId, session.user.id);
+
+    revalidatePath(`/dashboard/video/${videoId}`);
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Ошибка анализа' };
+  }
+};
