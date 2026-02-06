@@ -65,7 +65,7 @@ export default async function VideoPage({ params }: VideoPageProps) {
           </div>
 
           <div className='h-full overflow-hidden rounded-xl border bg-background shadow-sm'>
-            <VideoTabs />
+            <VideoTabs video={video} />
           </div>
         </div>
       </div>

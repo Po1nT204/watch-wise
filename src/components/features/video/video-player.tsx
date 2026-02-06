@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
+import { usePlayerStore } from '@/store/use-player-store';
 
 interface VideoPlayerProps {
   url: string;
-  onProgress?: (state: { playedSeconds: number }) => void;
 }
 
-export function VideoPlayer({ url, onProgress }: VideoPlayerProps) {
+export function VideoPlayer({ url }: VideoPlayerProps) {
+  const setPlayerRef = usePlayerStore((state) => state.setPlayerRef);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -24,11 +25,12 @@ export function VideoPlayer({ url, onProgress }: VideoPlayerProps) {
   return (
     <div className='relative aspect-video overflow-hidden rounded-xl border bg-black shadow-sm'>
       <ReactPlayer
+        ref={(ref) => setPlayerRef(ref)}
         src={url}
         width='100%'
         height='100%'
         controls={true}
-        onProgress={onProgress as any}
+        // onProgress={onProgress as any}
         // config={{
         //   youtube: {
         //     playerVars: {
