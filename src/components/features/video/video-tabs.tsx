@@ -1,24 +1,38 @@
+'use client';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, MessageSquare, GraduationCap } from 'lucide-react';
+import { FileText, GraduationCap } from 'lucide-react';
 import { usePlayerStore } from '@/store/use-player-store';
 
 interface VideoTabsProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   video: any; // Сюда придут данные из страницы
+}
+
+interface Chunk {
+  id: string;
+  startTime: number;
+  text: string;
+}
+
+interface Question {
+  id: string;
+  text: string;
+  options: string[];
 }
 
 export function VideoTabs({ video }: VideoTabsProps) {
   const seekTo = usePlayerStore((state) => state.seekTo);
-  const transcript = video?.transcriptChunks || [];
+  const transcript: Chunk[] = video?.transcriptChunks || [];
   const content = video?.generatedContents?.[0];
-  const questions = content?.questions || [];
+  const questions: Question[] = content?.questions || [];
 
   return (
     <Tabs defaultValue='summary' className='w-full h-full flex flex-col'>
@@ -44,11 +58,14 @@ export function VideoTabs({ video }: VideoTabsProps) {
             <ScrollArea className='flex-1 p-4 h-[400px]'>
               <div className='text-sm text-muted-foreground space-y-4'>
                 {transcript.length > 0 ? (
-                  transcript.map((chunk: any) => (
+                  transcript.map((chunk) => (
                     <div
                       key={chunk.id}
                       className='group cursor-pointer hover:bg-muted p-2 rounded-md transition-colors border-l-2 border-transparent hover:border-primary'
-                      onClick={() => seekTo(chunk.startTime)}
+                      onClick={() => {
+                        console.log('Seeking to:', chunk.startTime);
+                        seekTo(chunk.startTime);
+                      }}
                     >
                       <span className='text-[10px] font-mono text-primary'>
                         [{Math.floor(chunk.startTime / 60)}:
@@ -77,7 +94,7 @@ export function VideoTabs({ video }: VideoTabsProps) {
           <ScrollArea className='h-[400px] p-4'>
             <div className='space-y-4'>
               {questions.length > 0 ? (
-                questions.map((q: any, idx: number) => (
+                questions.map((q, idx) => (
                   <Card key={q.id} className='p-4'>
                     <p className='text-sm font-medium'>
                       {idx + 1}. {q.text}

@@ -66,7 +66,15 @@ export const getVideoById = async (videoId: string, userId: string) => {
         // Подтягиваем сгенерированный контент для этого юзера
         generatedContents: {
           where: { userId },
+          include: {
+            questions: true,
+          },
           take: 1,
+        },
+        transcriptChunks: {
+          orderBy: {
+            startTime: 'asc',
+          },
         },
       },
     });

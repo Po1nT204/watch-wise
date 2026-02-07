@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactPlayer from 'react-player';
 import { usePlayerStore } from '@/store/use-player-store';
 
@@ -9,12 +9,22 @@ interface VideoPlayerProps {
 }
 
 export function VideoPlayer({ url }: VideoPlayerProps) {
-  const setPlayerRef = usePlayerStore((state) => state.setPlayerRef);
   const [isMounted, setIsMounted] = useState(false);
+  const playerRef = useRef<any>(null);
+
+  const seekToTime = usePlayerStore((state) => state.seekToTime);
+  const seekNonce = usePlayerStore((state) => state.seekNonce);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (playerRef.current && seekToTime !== null) {
+      // Вызываем метод у локального рефа
+      playerRef.current.seekTo(seekToTime, 'seconds');
+    }
+  }, [seekToTime, seekNonce]);
 
   if (!isMounted) {
     return (
@@ -25,7 +35,7 @@ export function VideoPlayer({ url }: VideoPlayerProps) {
   return (
     <div className='relative aspect-video overflow-hidden rounded-xl border bg-black shadow-sm'>
       <ReactPlayer
-        ref={(ref) => setPlayerRef(ref)}
+        ref={playerRef}
         src={url}
         width='100%'
         height='100%'
