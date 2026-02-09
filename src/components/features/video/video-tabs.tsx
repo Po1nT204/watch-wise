@@ -9,11 +9,11 @@ import {
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, GraduationCap } from 'lucide-react';
-import { usePlayerStore } from '@/store/use-player-store';
 
 interface VideoTabsProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   video: any; // Сюда придут данные из страницы
+  onTimestampClick: (time: number) => void;
 }
 
 interface Chunk {
@@ -28,8 +28,7 @@ interface Question {
   options: string[];
 }
 
-export function VideoTabs({ video }: VideoTabsProps) {
-  const seekTo = usePlayerStore((state) => state.seekTo);
+export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
   const transcript: Chunk[] = video?.transcriptChunks || [];
   const content = video?.generatedContents?.[0];
   const questions: Question[] = content?.questions || [];
@@ -62,10 +61,7 @@ export function VideoTabs({ video }: VideoTabsProps) {
                     <div
                       key={chunk.id}
                       className='group cursor-pointer hover:bg-muted p-2 rounded-md transition-colors border-l-2 border-transparent hover:border-primary'
-                      onClick={() => {
-                        console.log('Seeking to:', chunk.startTime);
-                        seekTo(chunk.startTime);
-                      }}
+                      onClick={() => onTimestampClick(chunk.startTime)}
                     >
                       <span className='text-[10px] font-mono text-primary'>
                         [{Math.floor(chunk.startTime / 60)}:

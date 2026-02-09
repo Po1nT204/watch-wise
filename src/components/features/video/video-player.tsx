@@ -1,55 +1,76 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import ReactPlayer from 'react-player';
-import { usePlayerStore } from '@/store/use-player-store';
-
 interface VideoPlayerProps {
   url: string;
+  seekToTime: number | null;
+  onSeekComplete: () => void;
 }
 
-export function VideoPlayer({ url }: VideoPlayerProps) {
-  const [isMounted, setIsMounted] = useState(false);
-  const playerRef = useRef<any>(null);
+export function VideoPlayer({
+  url,
+  seekToTime,
+  onSeekComplete,
+}: VideoPlayerProps) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [isReady, setIsReady] = useState(false);
 
-  const seekToTime = usePlayerStore((state) => state.seekToTime);
-  const seekNonce = usePlayerStore((state) => state.seekNonce);
+  // Извлекаем ID видео из ссылки (поддерживает youtube.com и youtu.be)
+  const getVideoId = (url: string) => {
+    const regExp =
+      /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    return match && match[7].length === 11 ? match[7] : false;
+  };
 
+  const videoId = getVideoId(url);
+
+  // Следим за командой перемотки
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    if (seekToTime !== null && iframeRef.current && isReady) {
+      // Отправляем команду напрямую в IFrame через postMessage (стандарт YouTube API)
+      iframeRef.current.contentWindow?.postMessage(
+        JSON.stringify({
+          event: 'command',
+          func: 'seekTo',
+          args: [seekToTime, true],
+        }),
+        '*',
+      );
 
-  useEffect(() => {
-    if (playerRef.current && seekToTime !== null) {
-      // Вызываем метод у локального рефа
-      playerRef.current.seekTo(seekToTime, 'seconds');
+      // Запускаем видео, если оно было на паузе
+      iframeRef.current.contentWindow?.postMessage(
+        JSON.stringify({
+          event: 'command',
+          func: 'playVideo',
+          args: [],
+        }),
+        '*',
+      );
+
+      onSeekComplete();
     }
-  }, [seekToTime, seekNonce]);
+  }, [seekToTime, isReady, onSeekComplete]);
 
-  if (!isMounted) {
+  if (!videoId) {
     return (
-      <div className='relative aspect-video overflow-hidden rounded-xl border bg-muted animate-pulse' />
+      <div className='aspect-video bg-muted flex items-center justify-center rounded-xl'>
+        Неверная ссылка на видео
+      </div>
     );
   }
 
   return (
     <div className='relative aspect-video overflow-hidden rounded-xl border bg-black shadow-sm'>
-      <ReactPlayer
-        ref={playerRef}
-        src={url}
-        width='100%'
-        height='100%'
-        controls={true}
-        // onProgress={onProgress as any}
-        // config={{
-        //   youtube: {
-        //     playerVars: {
-        //       rel: 0,
-        //       modestbranding: 1,
-        //     } as any,
-        //   },
-        // }}
-        style={{ position: 'absolute', top: 0, left: 0 }}
+      <iframe
+        ref={iframeRef}
+        className='absolute top-0 left-0 w-full h-full'
+        src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+        title='YouTube video player'
+        frameBorder='0'
+        allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+        allowFullScreen
+        onLoad={() => setIsReady(true)}
       />
     </div>
   );
