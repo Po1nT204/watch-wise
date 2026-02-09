@@ -85,3 +85,24 @@ export const getVideoById = async (videoId: string, userId: string) => {
     return null;
   }
 };
+
+export const deleteVideoFromUser = async (videoId: string, userId: string) => {
+  try {
+    return await prisma.$transaction(async (tx) => {
+      // 1. Удаляем прогресс
+      await tx.videoProgress.deleteMany({
+        where: { videoId, userId },
+      });
+
+      // 2. Удаляем сгенерированный контент (каскад удалит вопросы и карточки)
+      await tx.generatedContent.deleteMany({
+        where: { videoId, userId },
+      });
+
+      return { success: true };
+    });
+  } catch (error) {
+    console.error('Delete Service Error:', error);
+    throw new Error('Ошибка при удалении данных видео');
+  }
+};
