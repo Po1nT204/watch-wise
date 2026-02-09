@@ -1,12 +1,11 @@
-import { auth } from '@/config/auth';
-import { redirect, notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getVideoById } from '@/services/video';
-import { VideoPlayer } from '@/components/features/video/video-player';
-import { VideoTabs } from '@/components/features/video/video-tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { auth } from '@/config/auth';
+import { VideoViewClient } from '@/components/features/video/video-view-client';
 
 interface VideoPageProps {
   params: Promise<{ id: string }>;
@@ -16,15 +15,10 @@ export default async function VideoPage({ params }: VideoPageProps) {
   const session = await auth();
   const { id } = await params;
 
-  if (!session?.user?.id) {
-    redirect('/login');
-  }
+  if (!session?.user?.id) redirect('/login');
 
   const video = await getVideoById(id, session.user.id);
-
-  if (!video) {
-    notFound();
-  }
+  if (!video) notFound();
 
   return (
     <div className='flex flex-col h-[calc(100vh-4rem)]'>
@@ -53,23 +47,7 @@ export default async function VideoPage({ params }: VideoPageProps) {
       </div>
 
       <div className='flex-1 overflow-hidden p-4 md:p-6'>
-        <div className='grid h-full gap-6 md:grid-cols-[1.5fr_1fr]'>
-          <div className='flex flex-col gap-4'>
-            {/* Исправлено: передаем video.url вместо videoId */}
-            <VideoPlayer url={video.url} />
-
-            <div className='p-4 bg-muted/30 rounded-lg border'>
-              <p className='text-sm font-medium'>Управление анализом</p>
-              <p className='text-xs text-muted-foreground mt-1'>
-                Здесь будут кнопки для запуска Yandex SpeechKit
-              </p>
-            </div>
-          </div>
-
-          <div className='h-full overflow-hidden rounded-xl border bg-background shadow-sm'>
-            <VideoTabs />
-          </div>
-        </div>
+        <VideoViewClient video={video} />
       </div>
     </div>
   );
