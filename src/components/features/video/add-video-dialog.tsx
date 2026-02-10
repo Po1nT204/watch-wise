@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { addVideo } from '@/server-actions/video'; // Твой экшн
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AddVideoDialogProps {
   children: React.ReactNode; // Кнопка, по которой кликаем
@@ -36,9 +37,9 @@ export function AddVideoDialog({ children }: AddVideoDialogProps) {
 
       if (result.error) {
         setError(result.error);
+        toast.error(result.error);
       } else {
-        // Успех! Закрываем окно.
-        // Список обновится сам благодаря revalidatePath в экшене.
+        toast.success('Видео успешно добавлено!');
         setOpen(false);
       }
     });
