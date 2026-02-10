@@ -94,3 +94,18 @@ export const startAnalysis = async (videoId: string) => {
     return { error: 'Ошибка анализа' };
   }
 };
+
+export const deleteVideo = async (videoId: string) => {
+  const session = await auth();
+  if (!session?.user?.id) return { error: 'Не авторизован' };
+
+  try {
+    const { deleteVideoFromUser } = await import('@/services/video');
+    await deleteVideoFromUser(videoId, session.user.id);
+
+    revalidatePath('/dashboard');
+    return { success: 'Видео удалено из вашей библиотеки' };
+  } catch (error) {
+    return { error: 'Не удалось удалить видео' };
+  }
+};

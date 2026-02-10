@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/card';
 import {
   Activity,
+  ExternalLink,
   PlayCircle,
   PlusCircle,
   Users,
@@ -18,6 +19,7 @@ import { getVideosByUserId } from '@/services/video';
 import { Button } from '@/components/ui/button';
 import { AddVideoDialog } from '@/components/features/video/add-video-dialog';
 import Link from 'next/link';
+import { DeleteVideoButton } from '@/components/features/video/delete-video-button';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -107,24 +109,45 @@ export default async function DashboardPage() {
               // --- СПИСОК ВИДЕО (Реальные данные) ---
               <div className='space-y-8'>
                 {videos.map((video) => (
-                  <div key={video.id} className='flex items-center'>
-                    <div className='h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center mr-4'>
-                      <PlayCircle className='h-5 w-5 text-blue-600' />
+                  <div
+                    key={video.id}
+                    className='group relative flex items-center p-4 rounded-xl border bg-card hover:shadow-md hover:border-primary/30 transition-all duration-200'
+                  >
+                    {/* Левая часть: Иконка */}
+                    <div className='h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mr-4'>
+                      <PlayCircle className='h-7 w-7 text-primary' />
                     </div>
-                    <div className='ml-4 space-y-1'>
-                      <p className='text-sm font-medium leading-none'>
+
+                    {/* Центральная часть: Инфо */}
+                    <div className='flex-1 min-w-0'>
+                      <p className='text-sm font-bold truncate pr-8 text-foreground'>
                         {video.title || 'Видео без названия'}
                       </p>
-                      <p className='text-sm text-muted-foreground'>
-                        {video.platform} •{' '}
-                        {new Date(video.createdAt).toLocaleDateString('ru-RU')}
-                      </p>
+                      <div className='flex items-center gap-3 mt-1'>
+                        <span className='uppercase tracking-wider text-[10px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded'>
+                          {video.platform}
+                        </span>
+                        <span className='text-[11px] text-muted-foreground font-medium'>
+                          Добавлено:{' '}
+                          {new Date(video.createdAt).toLocaleDateString(
+                            'ru-RU',
+                          )}
+                        </span>
+                      </div>
                     </div>
-                    <div className='ml-auto font-medium'>
-                      {/* Сюда можно вывести статус или кнопку "Перейти" */}
-                      <Button variant='ghost' size='sm' asChild>
+
+                    {/* Правая часть: Действия */}
+                    <div className='flex items-center gap-2'>
+                      <DeleteVideoButton videoId={video.id} />
+
+                      <Button
+                        size='sm'
+                        className='rounded-full px-4 font-semibold shadow-sm hover:translate-x-1 transition-transform'
+                        asChild
+                      >
                         <Link href={`/dashboard/video/${video.id}`}>
                           Открыть
+                          <ExternalLink className='ml-2 h-3.5 w-3.5' />
                         </Link>
                       </Button>
                     </div>
