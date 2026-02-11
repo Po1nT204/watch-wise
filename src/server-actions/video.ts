@@ -7,6 +7,12 @@ import prisma from '@/config/prisma';
 import { getYoutubeVideoId, getYoutubeThumbnail } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 
+interface AnalysisSettings {
+  mode: string; // в будущем enum и импорт из файла types
+  difficulty: string; // в будущем enum и импорт из файла types
+  questionsCount: number;
+}
+
 export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
   const session = await auth();
 
@@ -78,14 +84,19 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
   }
 };
 
-export const startAnalysis = async (videoId: string) => {
+export const startAnalysis = async (
+  videoId: string,
+  settings: AnalysisSettings,
+) => {
   const session = await auth();
   if (!session?.user?.id) return { error: 'Не авторизован' };
 
   try {
     // Импортируем наш мок-сервис
     const { simulateVideoAnalysis } = await import('@/services/ai-mock');
-    await simulateVideoAnalysis(videoId, session.user.id);
+
+    // Передаем настройки внутрь
+    await simulateVideoAnalysis(videoId, session.user.id, settings);
 
     revalidatePath(`/dashboard/video/${videoId}`);
     return { success: true };
@@ -106,6 +117,7 @@ export const deleteVideo = async (videoId: string) => {
     revalidatePath('/dashboard');
     return { success: 'Видео удалено из вашей библиотеки' };
   } catch (error) {
+    console.error(error);
     return { error: 'Не удалось удалить видео' };
   }
 };

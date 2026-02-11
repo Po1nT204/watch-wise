@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import Image from 'next/image';
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -32,9 +33,11 @@ export default async function SettingsPage() {
               <div className='flex flex-col gap-4 items-center'>
                 <div className='h-32 w-32 rounded-full border-4 border-primary/10 overflow-hidden bg-muted flex items-center justify-center'>
                   {session.user.image ? (
-                    <img
+                    <Image
                       src={session.user.image}
                       alt='Avatar'
+                      width={128}
+                      height={128}
                       className='h-full w-full object-cover'
                     />
                   ) : (
