@@ -24,3 +24,13 @@ export const VideoUrlSchema = z.object({
       message: 'Поддерживаются только ссылки на YouTube',
     }),
 });
+
+export const SettingsSchema = z.object({
+  name: z.string().min(2, 'Имя слишком короткое').optional(),
+  bio: z.string().max(500, 'Описание слишком длинное').optional().nullable(),
+  age: z.number().min(10).max(100).optional().nullable(),
+  links: z
+    .record(z.string(), z.string().url('Некорректная ссылка'))
+    .optional()
+    .nullable(),
+});
