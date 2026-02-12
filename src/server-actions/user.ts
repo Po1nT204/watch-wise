@@ -19,7 +19,8 @@ export const updateUserSettings = async (
         name: values.name,
         bio: values.bio,
         age: values.age,
-        links: values.links,
+        location: values.location,
+        links: values.links ? { url: values.links } : {},
       },
     });
 
