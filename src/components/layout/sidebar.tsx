@@ -29,10 +29,7 @@ export const Sidebar = () => {
   return (
     <div className='flex h-full max-h-screen flex-col gap-2'>
       <div className='flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6'>
-        <Link
-          href='/dashboard'
-          className='flex items-center gap-2 font-semibold'
-        >
+        <Link href='/' className='flex items-center gap-2 font-semibold'>
           <Video className='h-6 w-6' />
           <span className=''>WatchWise</span>
         </Link>
@@ -51,7 +48,7 @@ export const Sidebar = () => {
                   'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary',
                   isActive
                     ? 'bg-muted text-primary'
-                    : 'text-muted-foreground hover:bg-muted'
+                    : 'text-muted-foreground hover:bg-muted',
                 )}
               >
                 <route.icon className='h-4 w-4' />

@@ -44,6 +44,11 @@ model User {
   password      String?   // Для Credentials провайдера
   role          String    @default("user") // 'user' | 'admin'
   
+  bio           String?   @db.Text
+  age           Int?
+  links         Json?     // Храним массив ссылок или объект { github: "", website: "" }
+  location      String? 
+
   accounts      Account[]
   sessions      Session[]
   

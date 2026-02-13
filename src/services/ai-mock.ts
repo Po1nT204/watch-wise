@@ -1,118 +1,82 @@
 import prisma from '@/config/prisma';
 
-export async function simulateVideoAnalysis(videoId: string, userId: string) {
+interface AnalysisSettings {
+  mode: string;
+  difficulty: string;
+  questionsCount: number;
+}
+
+export async function simulateVideoAnalysis(
+  videoId: string,
+  userId: string,
+  settings: AnalysisSettings,
+) {
   // 1. Ставим статус "В обработке"
   await prisma.video.update({
     where: { id: videoId },
     data: { status: 'PROCESSING' },
   });
 
-  // 2. Имитируем задержку (3 секунды)
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  // Имитируем задержку
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   try {
-    // 3. Расширенный транскрипт для проверки скролла и навигации
-    const transcriptData = [
-      {
-        startTime: 0,
-        endTime: 10,
-        text: 'Привет! Сегодня мы разберем основы проектирования высоконагруженных систем.',
-      },
-      {
-        startTime: 10,
-        endTime: 25,
-        text: 'Первое, с чего стоит начать — это понимание требований: функциональных и нефункциональных.',
-      },
-      {
-        startTime: 25,
-        endTime: 40,
-        text: 'Нефункциональные требования включают в себя масштабируемость, доступность и надежность.',
-      },
-      {
-        startTime: 40,
-        endTime: 55,
-        text: 'Далее мы перейдем к концепции Single Point of Failure. Это критический узел системы, отказ которого ведет к остановке всего сервиса.',
-      },
-      {
-        startTime: 55,
-        endTime: 75,
-        text: 'Для борьбы с этим используется репликация и шардирование данных. Репликация позволяет хранить копии базы данных на разных серверах.',
-      },
-      {
-        startTime: 75,
-        endTime: 95,
-        text: 'Шардирование же — это процесс разделения большой таблицы на части для распределения нагрузки между узлами.',
-      },
-      {
-        startTime: 95,
-        endTime: 110,
-        text: 'Также важную роль играет балансировщик нагрузки (Load Balancer), который распределяет запросы пользователей.',
-      },
-      {
-        startTime: 110,
-        endTime: 125,
-        text: 'В завершение обсудим кэширование. Это способ ускорить чтение данных за счет использования оперативной памяти.',
-      },
-    ];
-
-    await prisma.transcriptChunk.createMany({
-      data: transcriptData.map((chunk) => ({
-        ...chunk,
-        videoId,
-      })),
+    // 2. Создаем транскрипт (если его еще нет)
+    // Проверяем, есть ли уже чанки, чтобы не дублировать при повторном анализе
+    const existingChunks = await prisma.transcriptChunk.count({
+      where: { videoId },
     });
 
-    // 4. Расширенный контент с несколькими вопросами
+    if (existingChunks === 0) {
+      const transcriptData = [
+        {
+          startTime: 0,
+          endTime: 10,
+          text: 'Привет! Сегодня мы разберем основы проектирования высоконагруженных систем.',
+        },
+        {
+          startTime: 10,
+          endTime: 25,
+          text: 'Первое, с чего стоит начать — это понимание требований: функциональных и нефункциональных.',
+        },
+        {
+          startTime: 25,
+          endTime: 45,
+          text: 'Нефункциональные требования включают в себя масштабируемость, доступность и надежность.',
+        },
+      ];
+
+      await prisma.transcriptChunk.createMany({
+        data: transcriptData.map((chunk) => ({ ...chunk, videoId })),
+      });
+    }
+
+    // 3. Генерируем вопросы в зависимости от settings.questionsCount
+    const mockQuestions = Array.from({ length: settings.questionsCount }).map(
+      (_, i) => ({
+        text: `Вопрос #${i + 1} (${settings.difficulty}) для режима ${settings.mode}: Какая характеристика системы отвечает за работу при росте нагрузки?`,
+        timestamp: (i + 1) * 15.0,
+        correctIdx: 0,
+        options: [
+          'Масштабируемость',
+          'Инкапсуляция',
+          'Полиморфизм',
+          'Цветокоррекция',
+        ],
+        explanation: `Это тестовый ответ для уровня ${settings.difficulty}.`,
+      }),
+    );
+
+    // 4. Создаем сгенерированный контент
     await prisma.generatedContent.create({
       data: {
         videoId,
         userId,
-        difficulty: 'medium',
-        mode: 'student',
-        summary:
-          'В данном материале рассматриваются фундаментальные аспекты System Design: классификация требований (NFR/FR), методы обеспечения отказоустойчивости через устранение SPOF, а также базовые техники масштабирования — репликация, шардирование и кэширование.',
+        difficulty: settings.difficulty,
+        mode: settings.mode,
+        summary: `Это краткое резюме, адаптированное под режим "${settings.mode}" и уровень сложности "${settings.difficulty}". В видео обсуждаются основы System Design.`,
         questions: {
-          create: [
-            {
-              text: 'Что такое Single Point of Failure (SPOF)?',
-              timestamp: 42.0,
-              correctIdx: 2,
-              options: [
-                'Метод ускорения базы данных',
-                'Алгоритм шифрования',
-                'Критический узел, отказ которого ломает всю систему',
-                'Тип сетевого протокола',
-              ],
-              explanation:
-                'SPOF — это компонент системы, который не имеет дубликата и при выходе из строя делает систему неработоспособной.',
-            },
-            {
-              text: 'В чем ключевое отличие шардирования от репликации?',
-              timestamp: 80.0,
-              correctIdx: 0,
-              options: [
-                'Шардирование делит данные на части, репликация — копирует их',
-                'Это синонимы',
-                'Репликация используется только для кэша',
-                'Шардирование замедляет систему',
-              ],
-              explanation:
-                'Репликация — это копирование (HA), шардирование — это горизонтальное масштабирование через деление данных.',
-            },
-            {
-              text: 'Какую задачу выполняет Load Balancer?',
-              timestamp: 100.0,
-              correctIdx: 1,
-              options: [
-                'Хранение паролей',
-                'Распределение входящего трафика между серверами',
-                'Очистка кэша',
-                'Транскрибация видео',
-              ],
-              explanation:
-                'Балансировщик распределяет запросы, чтобы ни один сервер не был перегружен.',
-            },
-          ],
+          create: mockQuestions,
         },
       },
     });
