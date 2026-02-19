@@ -15,14 +15,27 @@ export const LoginSchema = z.object({
   password: z.string().min(1, { message: 'Введите пароль' }),
 });
 
+// export const VideoUrlSchema = z.object({
+//   url: z
+//     .string()
+//     .min(1, { message: 'Введите ссылку' })
+//     .url({ message: 'Введите корректный URL' })
+//     .regex(/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/, {
+//       message: 'Поддерживаются только ссылки на YouTube',
+//     }),
+// });
+
 export const VideoUrlSchema = z.object({
   url: z
     .string()
     .min(1, { message: 'Введите ссылку' })
     .url({ message: 'Введите корректный URL' })
-    .regex(/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/, {
-      message: 'Поддерживаются только ссылки на YouTube',
-    }),
+    .regex(
+      /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be|vkvideo\.ru|vk\.com\/video).+$/,
+      {
+        message: 'Поддерживаются ссылки на YouTube и VK Video',
+      },
+    ),
 });
 
 export const SettingsSchema = z.object({
