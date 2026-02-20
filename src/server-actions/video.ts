@@ -4,7 +4,11 @@ import { z } from 'zod';
 import { VideoUrlSchema } from '@/shared/schemas';
 import { auth } from '@/config/auth'; // Твой конфиг
 import prisma from '@/config/prisma';
-import { getYoutubeVideoId, getYoutubeThumbnail } from '@/lib/utils';
+import {
+  getYoutubeVideoId,
+  getYoutubeThumbnail,
+  parseVideoUrl,
+} from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 
 interface AnalysisSettings {
@@ -27,30 +31,34 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
   }
 
   const { url } = validatedFields.data;
-  const videoId = getYoutubeVideoId(url);
+  const videoData = parseVideoUrl(url);
 
-  if (!videoId) {
-    return { error: 'Не удалось определить ID видео' };
-  }
+  if (!videoData)
+    return { error: 'Не удалось определить ID видео или платформу' };
 
   try {
-    // 1. Создаем или обновляем само видео в базе (Video)
-    const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
-    const response = await fetch(oembedUrl);
-    const metadata = response.ok ? await response.json() : null;
+    let videoTitle = `${videoData.platform.toUpperCase()} Video ${videoData.id}`;
+    let thumbnail = '';
 
-    const videoTitle = metadata?.title || `YouTube Video ${videoId}`;
+    if (videoData.platform === 'youtube') {
+      const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoData.id}&format=json`;
+      const response = await fetch(oembedUrl);
+      const metadata = response.ok ? await response.json() : null;
+      if (metadata) videoTitle = metadata.title;
+      thumbnail = `https://img.youtube.com/vi/${videoData.id}/maxresdefault.jpg`;
+    }
+    // Для VK метаданные без API ключа получить сложно, пока оставим заглушку названия
 
     const video = await prisma.video.upsert({
-      where: { url: url },
-      update: {}, // Если видео есть, ничего не меняем пока
+      where: { url },
+      update: {},
       create: {
         url,
-        platform: 'youtube',
-        externalId: videoId,
-        thumbnail: getYoutubeThumbnail(videoId),
+        platform: videoData.platform,
+        externalId: videoData.id,
+        thumbnail: thumbnail,
         title: videoTitle,
-        status: 'PENDING', // Видео создано, но еще не анализировалось
+        status: 'PENDING',
       },
     });
 
