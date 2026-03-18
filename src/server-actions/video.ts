@@ -10,6 +10,7 @@ import {
   parseVideoUrl,
 } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
+import { YandexCloudService } from '@/services/yandex';
 
 interface AnalysisSettings {
   mode: string; // в будущем enum и импорт из файла types
@@ -92,6 +93,27 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
   }
 };
 
+// export const startAnalysis = async (
+//   videoId: string,
+//   settings: AnalysisSettings,
+// ) => {
+//   const session = await auth();
+//   if (!session?.user?.id) return { error: 'Не авторизован' };
+
+//   try {
+//     // Импортируем наш мок-сервис
+//     const { simulateVideoAnalysis } = await import('@/services/ai-mock');
+
+//     // Передаем настройки внутрь
+//     await simulateVideoAnalysis(videoId, session.user.id, settings);
+
+//     revalidatePath(`/dashboard/video/${videoId}`);
+//     return { success: true };
+//   } catch (error) {
+//     console.error(error);
+//     return { error: 'Ошибка анализа' };
+//   }
+// };
 export const startAnalysis = async (
   videoId: string,
   settings: AnalysisSettings,
@@ -100,17 +122,84 @@ export const startAnalysis = async (
   if (!session?.user?.id) return { error: 'Не авторизован' };
 
   try {
-    // Импортируем наш мок-сервис
-    const { simulateVideoAnalysis } = await import('@/services/ai-mock');
+    // 1. Ставим статус "В обработке", чтобы юзер видел лоадер
+    await prisma.video.update({
+      where: { id: videoId },
+      data: { status: 'PROCESSING' },
+    });
+    revalidatePath(`/dashboard/video/${videoId}`);
 
-    // Передаем настройки внутрь
-    await simulateVideoAnalysis(videoId, session.user.id, settings);
+    // 2. Получаем данные видео (нам нужен заголовок или транскрипт)
+    const video = await prisma.video.findUnique({
+      where: { id: videoId },
+      include: { transcriptChunks: true },
+    });
+
+    if (!video) return { error: 'Видео не найдено' };
+
+    // Подготавливаем текст для анализа.
+    // Если SpeechKit еще нет, используем Title + описание как временный контекст
+    const contextText =
+      video.transcriptChunks.length > 0
+        ? video.transcriptChunks.map((c) => c.text).join(' ')
+        : `Название видео: ${video.title}. Проанализируй содержание исходя из темы.`;
+
+    // 3. Вызываем реальный YandexGPT
+    const aiResults = await YandexCloudService.generateLearningContent(
+      contextText,
+      {
+        difficulty: settings.difficulty,
+        count: settings.questionsCount,
+      },
+    );
+
+    // 4. Сохраняем результаты в базу (Транзакция, чтобы всё сохранилось вместе)
+    await prisma.$transaction(async (tx) => {
+      const generatedContent = await tx.generatedContent.create({
+        data: {
+          videoId: videoId,
+          userId: session.user.id,
+          difficulty: settings.difficulty,
+          mode: settings.mode,
+          summary: aiResults.summary,
+        },
+      });
+
+      // Создаем вопросы, привязанные к этому контенту
+      if (aiResults.questions && aiResults.questions.length > 0) {
+        await tx.quizQuestion.createMany({
+          data: aiResults.questions.map((q: any) => ({
+            contentId: generatedContent.id,
+            text: q.text,
+            timestamp: q.timestamp || 0,
+            options: q.options,
+            correctIdx: q.correctIdx,
+            explanation: q.explanation,
+          })),
+        });
+      }
+    });
+
+    // 5. Завершаем: статус "Готово"
+    await prisma.video.update({
+      where: { id: videoId },
+      data: { status: 'COMPLETED' },
+    });
 
     revalidatePath(`/dashboard/video/${videoId}`);
     return { success: true };
   } catch (error) {
-    console.error(error);
-    return { error: 'Ошибка анализа' };
+    console.error('Analysis Error:', error);
+
+    // Если упало — ставим статус FAILED, чтобы кнопка снова стала активной
+    await prisma.video.update({
+      where: { id: videoId },
+      data: { status: 'FAILED' },
+    });
+
+    return {
+      error: 'Ошибка нейросети. Проверьте API ключи или баланс Yandex Cloud.',
+    };
   }
 };
 
