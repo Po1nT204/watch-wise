@@ -55,30 +55,38 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
               <CardDescription>Сгенерировано YandexGPT</CardDescription>
             </CardHeader>
             <ScrollArea className='flex-1 p-4 h-[400px]'>
-              <div className='text-sm text-muted-foreground space-y-4'>
-                {transcript.length > 0 ? (
-                  transcript.map((chunk) => (
-                    <div
-                      key={chunk.id}
-                      className='group cursor-pointer hover:bg-muted p-2 rounded-md transition-colors border-l-2 border-transparent hover:border-primary'
-                      onClick={() => onTimestampClick(chunk.startTime)}
-                    >
-                      <span className='text-[10px] font-mono text-primary'>
-                        [{Math.floor(chunk.startTime / 60)}:
-                        {Math.floor(chunk.startTime % 60)
-                          .toString()
-                          .padStart(2, '0')}
-                        ]
-                      </span>
-                      <p className='mt-1 text-foreground leading-relaxed'>
-                        {chunk.text}
-                      </p>
-                    </div>
-                  ))
+              <div className='text-sm space-y-4'>
+                {/* 1. Если есть Саммари от ИИ — показываем его */}
+                {content?.summary ? (
+                  <div className='prose prose-sm dark:prose-invert max-w-none text-foreground leading-relaxed whitespace-pre-wrap'>
+                    {content.summary}
+                  </div>
+                ) : transcript.length > 0 ? (
+                  /* 2. Если Саммари нет, но есть транскрипт — показываем его как фолбэк */
+                  <div className='space-y-4 text-muted-foreground'>
+                    <p className='text-xs font-bold uppercase text-primary'>
+                      Полный транскрипт (анализ не запущен):
+                    </p>
+                    {transcript.map((chunk) => (
+                      <div
+                        key={chunk.id}
+                        className='group cursor-pointer hover:bg-muted p-2 rounded-md transition-colors border-l-2 border-transparent hover:border-primary'
+                        onClick={() => onTimestampClick(chunk.startTime)}
+                      >
+                        <span className='text-[10px] font-mono text-primary'>
+                          [{Math.floor(chunk.startTime / 60)}:
+                          {Math.floor(chunk.startTime % 60)
+                            .toString()
+                            .padStart(2, '0')}
+                          ]
+                        </span>
+                        <p className='mt-1 text-foreground'>{chunk.text}</p>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <p className='italic'>
-                    Здесь будет отображаться структурированный конспект видео
-                    после анализа.
+                  <p className='italic text-muted-foreground'>
+                    Здесь появится конспект после анализа.
                   </p>
                 )}
               </div>

@@ -15,13 +15,26 @@ export class YandexCloudService {
     transcript: string,
     settings: { difficulty: string; count: number },
   ) {
-    const systemPrompt = `Ты — профессиональный методист. Проанализируй текст и создай JSON:
+    const systemPrompt = `Ты — эксперт-методист и редактор. Твоя задача: проанализировать сырой транскрипт видео и создать качественный обучающий контент.
+    
+    ИНСТРУКЦИИ:
+    1. SUMMARY: Сделай связный, грамотный текст (3-5 абзацев). Убери ошибки-галюцинации транскрипта, слова-паразиты, повторы и приветствия. Сфокусируйся на сути.
+    2. QUESTIONS: Сгенерируй ровно ${settings.count} вопросов. Вопросы должны проверять понимание темы видео, а не просто знание фактов.
+    3. JSON: Ответ должен быть строго в формате JSON без лишнего текста.
+
+    СТРУКТУРА JSON:
     {
-      "summary": "краткое содержание",
+      "summary": "Текст саммари в формате Markdown (используй заголовки, списки)",
       "questions": [
-        { "text": "вопрос", "timestamp": 10, "options": ["а", "б", "в", "г"], "correctIdx": 0, "explanation": "почему" }
+        { 
+          "text": "Текст вопроса", 
+          "timestamp": число_секунд_начала_темы, 
+          "options": ["А", "Б", "В", "Г"], 
+          "correctIdx": индекс_правильного, 
+          "explanation": "Почему этот ответ верный?" 
+        }
       ]
-    }. Отвечай ТОЛЬКО чистым JSON.`;
+    }`;
 
     try {
       const response = await this.openai.chat.completions.create({
@@ -29,17 +42,20 @@ export class YandexCloudService {
         model: `gpt://${this.folderId}/yandexgpt/latest`,
         messages: [
           { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `Текст: ${transcript}. Сложность: ${settings.difficulty}. Вопросов: ${settings.count}`,
-          },
+          { role: 'user', content: `Транскрипт для обработки: ${transcript}` },
         ],
         temperature: 0.3,
       });
 
       const content = response.choices[0].message.content || '';
-      const cleanJson = content.replace(/```json|```/g, '').trim();
+      console.log(content);
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('ИИ прислал не JSON:', content);
+        throw new Error('Ответ нейросети не содержит структурированных данных');
+      }
 
+      const cleanJson = jsonMatch[0];
       return JSON.parse(cleanJson);
     } catch (error) {
       console.error('Yandex AI Studio Error:', error);

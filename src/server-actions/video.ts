@@ -165,6 +165,7 @@ export const startAnalysis = async (
           })),
         });
       } catch (e) {
+        console.error('DEBUG YOUTUBE ERROR:', e);
         console.warn(
           'Не удалось получить субтитры YouTube, используем метаданные',
         );
