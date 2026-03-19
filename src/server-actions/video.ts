@@ -11,6 +11,7 @@ import {
 } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 import { YandexCloudService } from '@/services/yandex';
+import { YoutubeTranscript } from 'youtube-transcript';
 
 interface AnalysisSettings {
   mode: string; // в будущем enum и импорт из файла types
@@ -122,14 +123,12 @@ export const startAnalysis = async (
   if (!session?.user?.id) return { error: 'Не авторизован' };
 
   try {
-    // 1. Ставим статус "В обработке", чтобы юзер видел лоадер
     await prisma.video.update({
       where: { id: videoId },
       data: { status: 'PROCESSING' },
     });
     revalidatePath(`/dashboard/video/${videoId}`);
 
-    // 2. Получаем данные видео (нам нужен заголовок или транскрипт)
     const video = await prisma.video.findUnique({
       where: { id: videoId },
       include: { transcriptChunks: true },
@@ -137,12 +136,45 @@ export const startAnalysis = async (
 
     if (!video) return { error: 'Видео не найдено' };
 
-    // Подготавливаем текст для анализа.
-    // Если SpeechKit еще нет, используем Title + описание как временный контекст
+    // 2. Логика получения транскрипта
+    let finalTranscript = '';
+
+    // Если в базе уже есть чанки (например, загрузили ранее), используем их
+    if (video.transcriptChunks.length > 0) {
+      finalTranscript = video.transcriptChunks.map((c) => c.text).join(' ');
+    }
+    // Если это YouTube и в базе пусто — тянем через библиотеку
+    else if (video.platform === 'youtube') {
+      try {
+        const transcriptItems = await YoutubeTranscript.fetchTranscript(
+          video.url,
+          {
+            lang: 'ru', // Пытаемся взять русский
+          },
+        );
+
+        finalTranscript = transcriptItems.map((item) => item.text).join(' ');
+
+        // [Опционально] Сохраняем полученные чанки в базу, чтобы не скачивать их снова
+        await prisma.transcriptChunk.createMany({
+          data: transcriptItems.map((item) => ({
+            videoId: video.id,
+            startTime: item.offset / 1000, // библиотека отдает в мс
+            endTime: (item.offset + item.duration) / 1000,
+            text: item.text,
+          })),
+        });
+      } catch (e) {
+        console.warn(
+          'Не удалось получить субтитры YouTube, используем метаданные',
+        );
+      }
+    }
+
+    // Если всё еще пусто — используем название как запасной вариант
     const contextText =
-      video.transcriptChunks.length > 0
-        ? video.transcriptChunks.map((c) => c.text).join(' ')
-        : `Название видео: ${video.title}. Проанализируй содержание исходя из темы.`;
+      finalTranscript ||
+      `Название видео: ${video.title}. Проанализируй содержание.`;
 
     // 3. Вызываем реальный YandexGPT
     const aiResults = await YandexCloudService.generateLearningContent(
@@ -153,7 +185,6 @@ export const startAnalysis = async (
       },
     );
 
-    // 4. Сохраняем результаты в базу (Транзакция, чтобы всё сохранилось вместе)
     await prisma.$transaction(async (tx) => {
       const generatedContent = await tx.generatedContent.create({
         data: {
@@ -165,7 +196,6 @@ export const startAnalysis = async (
         },
       });
 
-      // Создаем вопросы, привязанные к этому контенту
       if (aiResults.questions && aiResults.questions.length > 0) {
         await tx.quizQuestion.createMany({
           data: aiResults.questions.map((q: any) => ({
@@ -180,7 +210,6 @@ export const startAnalysis = async (
       }
     });
 
-    // 5. Завершаем: статус "Готово"
     await prisma.video.update({
       where: { id: videoId },
       data: { status: 'COMPLETED' },
@@ -190,15 +219,13 @@ export const startAnalysis = async (
     return { success: true };
   } catch (error) {
     console.error('Analysis Error:', error);
-
-    // Если упало — ставим статус FAILED, чтобы кнопка снова стала активной
     await prisma.video.update({
       where: { id: videoId },
       data: { status: 'FAILED' },
     });
 
     return {
-      error: 'Ошибка нейросети. Проверьте API ключи или баланс Yandex Cloud.',
+      error: 'Ошибка анализа контента. Попробуйте позже.',
     };
   }
 };
