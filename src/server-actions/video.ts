@@ -10,6 +10,8 @@ import {
   parseVideoUrl,
 } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
+import { YandexCloudService } from '@/services/yandex';
+import { YoutubeTranscript } from 'youtube-transcript';
 
 interface AnalysisSettings {
   mode: string; // в будущем enum и импорт из файла types
@@ -92,6 +94,27 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
   }
 };
 
+// export const startAnalysis = async (
+//   videoId: string,
+//   settings: AnalysisSettings,
+// ) => {
+//   const session = await auth();
+//   if (!session?.user?.id) return { error: 'Не авторизован' };
+
+//   try {
+//     // Импортируем наш мок-сервис
+//     const { simulateVideoAnalysis } = await import('@/services/ai-mock');
+
+//     // Передаем настройки внутрь
+//     await simulateVideoAnalysis(videoId, session.user.id, settings);
+
+//     revalidatePath(`/dashboard/video/${videoId}`);
+//     return { success: true };
+//   } catch (error) {
+//     console.error(error);
+//     return { error: 'Ошибка анализа' };
+//   }
+// };
 export const startAnalysis = async (
   videoId: string,
   settings: AnalysisSettings,
@@ -100,17 +123,111 @@ export const startAnalysis = async (
   if (!session?.user?.id) return { error: 'Не авторизован' };
 
   try {
-    // Импортируем наш мок-сервис
-    const { simulateVideoAnalysis } = await import('@/services/ai-mock');
+    await prisma.video.update({
+      where: { id: videoId },
+      data: { status: 'PROCESSING' },
+    });
+    revalidatePath(`/dashboard/video/${videoId}`);
 
-    // Передаем настройки внутрь
-    await simulateVideoAnalysis(videoId, session.user.id, settings);
+    const video = await prisma.video.findUnique({
+      where: { id: videoId },
+      include: { transcriptChunks: true },
+    });
+
+    if (!video) return { error: 'Видео не найдено' };
+
+    // 2. Логика получения транскрипта
+    let finalTranscript = '';
+
+    // Если в базе уже есть чанки (например, загрузили ранее), используем их
+    if (video.transcriptChunks.length > 0) {
+      finalTranscript = video.transcriptChunks.map((c) => c.text).join(' ');
+    }
+    // Если это YouTube и в базе пусто — тянем через библиотеку
+    else if (video.platform === 'youtube') {
+      try {
+        const transcriptItems = await YoutubeTranscript.fetchTranscript(
+          video.url,
+          {
+            lang: 'ru', // Пытаемся взять русский
+          },
+        );
+
+        finalTranscript = transcriptItems.map((item) => item.text).join(' ');
+
+        // [Опционально] Сохраняем полученные чанки в базу, чтобы не скачивать их снова
+        await prisma.transcriptChunk.createMany({
+          data: transcriptItems.map((item) => ({
+            videoId: video.id,
+            startTime: item.offset / 1000, // библиотека отдает в мс
+            endTime: (item.offset + item.duration) / 1000,
+            text: item.text,
+          })),
+        });
+      } catch (e) {
+        console.error('DEBUG YOUTUBE ERROR:', e);
+        console.warn(
+          'Не удалось получить субтитры YouTube, используем метаданные',
+        );
+      }
+    }
+
+    // Если всё еще пусто — используем название как запасной вариант
+    const contextText =
+      finalTranscript ||
+      `Название видео: ${video.title}. Проанализируй содержание.`;
+
+    // 3. Вызываем реальный YandexGPT
+    const aiResults = await YandexCloudService.generateLearningContent(
+      contextText,
+      {
+        difficulty: settings.difficulty,
+        count: settings.questionsCount,
+      },
+    );
+
+    await prisma.$transaction(async (tx) => {
+      const generatedContent = await tx.generatedContent.create({
+        data: {
+          videoId: videoId,
+          userId: session.user.id,
+          difficulty: settings.difficulty,
+          mode: settings.mode,
+          summary: aiResults.summary,
+        },
+      });
+
+      if (aiResults.questions && aiResults.questions.length > 0) {
+        await tx.quizQuestion.createMany({
+          data: aiResults.questions.map((q: any) => ({
+            contentId: generatedContent.id,
+            text: q.text,
+            timestamp: q.timestamp || 0,
+            options: q.options,
+            correctIdx: q.correctIdx,
+            explanation: q.explanation,
+          })),
+        });
+      }
+    });
+
+    await prisma.video.update({
+      where: { id: videoId },
+      data: { status: 'COMPLETED' },
+    });
 
     revalidatePath(`/dashboard/video/${videoId}`);
     return { success: true };
   } catch (error) {
-    console.error(error);
-    return { error: 'Ошибка анализа' };
+    console.error('Analysis Error:', error);
+    await prisma.video.update({
+      where: { id: videoId },
+      data: { status: 'FAILED' },
+    });
+
+    return {
+      error: 'Ошибка анализа контента. Попробуйте позже.',
+    };
   }
 };
 
