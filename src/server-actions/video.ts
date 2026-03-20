@@ -137,11 +137,14 @@ export const startAnalysis = async (
     if (!video) return { error: 'Видео не найдено' };
 
     // 2. Логика получения транскрипта
-    let finalTranscript = '';
+    let finalTranscriptWithTimestamps = '';
 
     // Если в базе уже есть чанки (например, загрузили ранее), используем их
     if (video.transcriptChunks.length > 0) {
-      finalTranscript = video.transcriptChunks.map((c) => c.text).join(' ');
+      // Если берем из базы
+      finalTranscriptWithTimestamps = video.transcriptChunks
+        .map((c) => `[${Math.floor(c.startTime)}s] ${c.text}`)
+        .join(' ');
     }
     // Если это YouTube и в базе пусто — тянем через библиотеку
     else if (video.platform === 'youtube') {
@@ -153,7 +156,9 @@ export const startAnalysis = async (
           },
         );
 
-        finalTranscript = transcriptItems.map((item) => item.text).join(' ');
+        finalTranscriptWithTimestamps = transcriptItems
+          .map((item) => `[${Math.floor(item.offset / 1000)}s] ${item.text}`)
+          .join(' ');
 
         // [Опционально] Сохраняем полученные чанки в базу, чтобы не скачивать их снова
         await prisma.transcriptChunk.createMany({
@@ -174,8 +179,8 @@ export const startAnalysis = async (
 
     // Если всё еще пусто — используем название как запасной вариант
     const contextText =
-      finalTranscript ||
-      `Название видео: ${video.title}. Проанализируй содержание.`;
+      finalTranscriptWithTimestamps ||
+      `Название видео: ${video.title}. Проанализируй содержание`;
 
     // 3. Вызываем реальный YandexGPT
     const aiResults = await YandexCloudService.generateLearningContent(
