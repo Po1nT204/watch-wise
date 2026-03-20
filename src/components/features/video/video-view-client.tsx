@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { VideoPlayer } from './video-player';
 import { VideoTabs } from './video-tabs';
 import { AnalysisControl } from './analysis-control';
+import { QuizOverlay } from './quiz-overlay';
 
 export function VideoViewClient({ video }: { video: any }) {
   const [seekTo, setSeekTo] = useState<number | null>(null);
@@ -31,9 +32,15 @@ export function VideoViewClient({ video }: { video: any }) {
     }
   };
 
+  const handleAnswer = (isCorrect: boolean) => {
+    // Здесь позже можно добавить логику сохранения в БД
+    setCurrentQuestion(null);
+    setIsPaused(false);
+  };
+
   return (
-    <div className='grid h-full gap-6 md:grid-cols-[1.5fr_1fr]'>
-      <div className='flex flex-col gap-4'>
+    <div className='grid h-full gap-6 md:grid-cols-[1.5fr_1fr] relative'>
+      <div className='flex flex-col gap-4 relative'>
         <VideoPlayer
           url={video.url}
           seekToTime={seekTo}
@@ -42,26 +49,7 @@ export function VideoViewClient({ video }: { video: any }) {
           isPaused={isPaused}
         />
         {currentQuestion && (
-          <div className='absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl'>
-            <div className='bg-background p-6 rounded-lg shadow-2xl max-w-md w-full'>
-              <h3 className='text-lg font-bold mb-4'>{currentQuestion.text}</h3>
-              <div className='grid gap-2 mb-6'>
-                {currentQuestion.options.map((opt: string, i: number) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      // Тут будет логика проверки ответа
-                      setCurrentQuestion(null);
-                      setIsPaused(false);
-                    }}
-                    className='text-left p-3 border rounded-md hover:bg-primary/10 transition-colors'
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <QuizOverlay question={currentQuestion} onAnswer={handleAnswer} />
         )}
         <div className='p-4 bg-muted/30 rounded-lg border'>
           <p className='text-sm font-medium mb-3'>Управление анализом</p>
