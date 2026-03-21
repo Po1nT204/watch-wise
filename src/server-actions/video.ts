@@ -4,14 +4,11 @@ import { z } from 'zod';
 import { VideoUrlSchema } from '@/shared/schemas';
 import { auth } from '@/config/auth'; // Твой конфиг
 import prisma from '@/config/prisma';
-import {
-  getYoutubeVideoId,
-  getYoutubeThumbnail,
-  parseVideoUrl,
-} from '@/lib/utils';
+import { parseVideoUrl } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 import { YandexCloudService } from '@/services/yandex';
 import { YoutubeTranscript } from 'youtube-transcript';
+import { YoutubeService } from '@/services/youtube';
 
 interface AnalysisSettings {
   mode: string; // в будущем enum и импорт из файла types
@@ -94,27 +91,6 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
   }
 };
 
-// export const startAnalysis = async (
-//   videoId: string,
-//   settings: AnalysisSettings,
-// ) => {
-//   const session = await auth();
-//   if (!session?.user?.id) return { error: 'Не авторизован' };
-
-//   try {
-//     // Импортируем наш мок-сервис
-//     const { simulateVideoAnalysis } = await import('@/services/ai-mock');
-
-//     // Передаем настройки внутрь
-//     await simulateVideoAnalysis(videoId, session.user.id, settings);
-
-//     revalidatePath(`/dashboard/video/${videoId}`);
-//     return { success: true };
-//   } catch (error) {
-//     console.error(error);
-//     return { error: 'Ошибка анализа' };
-//   }
-// };
 export const startAnalysis = async (
   videoId: string,
   settings: AnalysisSettings,
@@ -137,52 +113,32 @@ export const startAnalysis = async (
     if (!video) return { error: 'Видео не найдено' };
 
     // 2. Логика получения транскрипта
-    let finalTranscriptWithTimestamps = '';
+    let contextText = '';
 
     // Если в базе уже есть чанки (например, загрузили ранее), используем их
     if (video.transcriptChunks.length > 0) {
       // Если берем из базы
-      finalTranscriptWithTimestamps = video.transcriptChunks
+      contextText = video.transcriptChunks
         .map((c) => `[${Math.floor(c.startTime)}s] ${c.text}`)
         .join(' ');
     }
     // Если это YouTube и в базе пусто — тянем через библиотеку
     else if (video.platform === 'youtube') {
       try {
-        const transcriptItems = await YoutubeTranscript.fetchTranscript(
+        contextText = await YoutubeService.fetchAndSaveTranscript(
           video.url,
-          {
-            lang: 'ru', // Пытаемся взять русский
-          },
+          video.id,
         );
-
-        finalTranscriptWithTimestamps = transcriptItems
-          .map((item) => `[${Math.floor(item.offset / 1000)}s] ${item.text}`)
-          .join(' ');
-
-        // [Опционально] Сохраняем полученные чанки в базу, чтобы не скачивать их снова
-        await prisma.transcriptChunk.createMany({
-          data: transcriptItems.map((item) => ({
-            videoId: video.id,
-            startTime: item.offset / 1000, // библиотека отдает в мс
-            endTime: (item.offset + item.duration) / 1000,
-            text: item.text,
-          })),
-        });
       } catch (e) {
-        console.error('DEBUG YOUTUBE ERROR:', e);
+        console.error('Ошибка получения субтитров:', e);
         console.warn(
           'Не удалось получить субтитры YouTube, используем метаданные',
         );
+        contextText = `Название: ${video.title}. Описание отсутствует. Работаем только с названием.`;
       }
     }
 
-    // Если всё еще пусто — используем название как запасной вариант
-    const contextText =
-      finalTranscriptWithTimestamps ||
-      `Название видео: ${video.title}. Проанализируй содержание`;
-
-    // 3. Вызываем реальный YandexGPT
+    // 3. Вызываем YandexGPT
     const aiResults = await YandexCloudService.generateLearningContent(
       contextText,
       {
@@ -229,7 +185,6 @@ export const startAnalysis = async (
       where: { id: videoId },
       data: { status: 'FAILED' },
     });
-
     return {
       error: 'Ошибка анализа контента. Попробуйте позже.',
     };
