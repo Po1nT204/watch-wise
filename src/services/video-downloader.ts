@@ -21,7 +21,7 @@ export class VideoDownloader {
         .audioFormat('mp3')
         .output(tempDir)
         // Настраиваем имя выходного файла через шаблон yt-dlp
-        .setOutputTemplate(`${videoId}.%(ext)s`)
+        .setOutputTemplate(path.join(tempDir, `${videoId}.%(ext)s`))
         .run();
 
       return outputPath;

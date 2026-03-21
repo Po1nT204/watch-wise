@@ -1,4 +1,3 @@
-// test-dl.ts
 import { YtDlp } from 'ytdlp-nodejs';
 import path from 'path';
 import fs from 'fs';
