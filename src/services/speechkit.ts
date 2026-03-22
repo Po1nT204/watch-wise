@@ -117,4 +117,39 @@ export class SpeechKitService {
     );
     return response.data;
   }
+
+  static parseV3Response(rawResponse: any) {
+    const chunks: { startTime: number; endTime: number; text: string }[] = [];
+
+    // API v3 возвращает ответ, который может содержать несколько результатов
+    // Если rawResponse это строка (как в логе), сначала распарсим её
+    const data =
+      typeof rawResponse === 'string' ? JSON.parse(rawResponse) : rawResponse;
+
+    // Проверяем наличие результатов (в v3 это может быть массив или объект с полем result)
+    const results = Array.isArray(data) ? data : [data];
+
+    results.forEach((item: any) => {
+      const finalResult = item.result?.final;
+      if (
+        finalResult &&
+        finalResult.alternatives &&
+        finalResult.alternatives[0]
+      ) {
+        const alt = finalResult.alternatives[0];
+
+        // Берем общее время блока
+        const startMs = parseInt(alt.words[0].startTimeMs);
+        const endMs = parseInt(alt.words[alt.words.length - 1].endTimeMs);
+
+        chunks.push({
+          startTime: startMs / 1000,
+          endTime: endMs / 1000,
+          text: alt.text,
+        });
+      }
+    });
+
+    return chunks;
+  }
 }
