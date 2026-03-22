@@ -34,7 +34,7 @@ export class S3Service {
         }),
       );
 
-      return `s3://${bucketName}/${key}`;
+      return `https://storage.yandexcloud.net/${bucketName}/${key}`;
     } catch (error) {
       console.error('[S3Service] Upload failed:', error);
       throw new Error('Ошибка при загрузке аудио в облако');

@@ -35,33 +35,53 @@ export class SpeechKitService {
     return key;
   }
 
+  private static getFolderId() {
+    const id = process.env.YANDEX_FOLDER_ID;
+    if (!id) throw new Error('YANDEX_FOLDER_ID не найден в .env');
+    return id;
+  }
+
   /**
    * Отправляет файл из S3 на асинхронное распознавание
    */
   static async createTask(fileUri: string): Promise<string> {
     const apiKey = this.getApiKey();
+    const folderId = this.getFolderId();
 
-    const response = await axios.post(
-      'https://transcribe.api.cloud.yandex.net/speech/stt/v2/longRunningRecognize',
-      {
-        config: {
-          specification: {
-            languageCode: 'ru-RU',
+    try {
+      const response = await axios.post(
+        'https://stt.api.cloud.yandex.net/stt/v3/recognizeFileAsync',
+        {
+          uri: fileUri,
+          recognition_model: {
             model: 'general',
-            audioEncoding: 'MP3',
-            hasTimestamps: true,
+            audio_format: {
+              container_audio: {
+                container_audio_type: 'MP3',
+              },
+            },
+            text_normalization: {
+              text_normalization: 'TEXT_NORMALIZATION_ENABLED',
+              profanity_filter: false,
+            },
           },
         },
-        audio: {
-          uri: fileUri,
+        {
+          headers: {
+            Authorization: `Api-Key ${apiKey}`,
+            'x-folder-id': folderId,
+          },
         },
-      },
-      {
-        headers: { Authorization: `Api-Key ${apiKey}` },
-      },
-    );
+      );
 
-    return response.data.id;
+      return response.data.id;
+    } catch (error: any) {
+      console.error(
+        '[SpeechKit] createTask error details:',
+        error.response?.data || error.message,
+      );
+      throw error;
+    }
   }
 
   /**
@@ -72,10 +92,29 @@ export class SpeechKitService {
     const response = await axios.get(
       `https://operation.api.cloud.yandex.net/operations/${taskId}`,
       {
-        headers: { Authorization: `Api-Key ${apiKey}` },
+        headers: {
+          Authorization: `Api-Key ${apiKey}`,
+          'x-folder-id': this.getFolderId(),
+        },
       },
     );
 
+    return response.data;
+  }
+
+  /**
+   * Получение самого текста (для API v3 это отдельный шаг после того как done: true)
+   */
+  static async getRecognitionResult(taskId: string) {
+    const apiKey = this.getApiKey();
+    const response = await axios.get(
+      `https://stt.api.cloud.yandex.net/stt/v3/getRecognition?operation_id=${taskId}`,
+      {
+        headers: {
+          Authorization: `Api-Key ${apiKey}`,
+        },
+      },
+    );
     return response.data;
   }
 }

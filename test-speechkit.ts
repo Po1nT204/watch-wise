@@ -36,21 +36,14 @@ async function testASRPipeline() {
 
       if (result.done) {
         isDone = true;
-        console.log('--- УСПЕХ! Текст получен ---');
+        console.log('--- Операция завершена! Запрашиваем результат ---');
 
-        // Выводим первые 300 символов распознанного текста
-        const fullText = result.response?.chunks
-          .map((chunk) => chunk.alternatives[0].text)
-          .join(' ');
+        const finalResult = await SpeechKitService.getRecognitionResult(taskId);
 
-        console.log(
-          'Результат (фрагмент):',
-          fullText?.substring(0, 500) + '...',
-        );
-
-        // Для отладки таймкодов выведем первое слово
-        const firstWord = result.response?.chunks[0].alternatives[0].words[0];
-        console.log('Пример таймкода первого слова:', firstWord);
+        // В v3 результат приходит как поток объектов. Нам нужно собрать текст.
+        // Это пример упрощенного получения текста из ответа v3
+        console.log('--- ПОЛНЫЙ ОТВЕТ ПОЛУЧЕН ---');
+        console.log(JSON.stringify(finalResult).substring(0, 500) + '...');
         break;
       } else {
         console.log(`[${attempts}] Еще распознается... ждем 5 сек`);
