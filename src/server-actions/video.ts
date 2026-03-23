@@ -9,6 +9,9 @@ import { revalidatePath } from 'next/cache';
 import { YandexCloudService } from '@/services/yandex';
 import { YoutubeTranscript } from 'youtube-transcript';
 import { YoutubeService } from '@/services/youtube';
+import { S3Service } from '@/services/s3';
+import { SpeechKitService } from '@/services/speechkit';
+import { VideoDownloader } from '@/services/video-downloader';
 
 interface AnalysisSettings {
   mode: string; // в будущем enum и импорт из файла types
@@ -135,6 +138,53 @@ export const startAnalysis = async (
           'Не удалось получить субтитры YouTube, используем метаданные',
         );
         contextText = `Название: ${video.title}. Описание отсутствует. Работаем только с названием.`;
+      }
+    } else if (video.platform === 'vk') {
+      try {
+        // 1. Извлекаем аудио локально
+        const localPath = await VideoDownloader.extractAudio(
+          video.url,
+          video.id,
+        );
+
+        // 2. Загружаем в S3
+        const s3Url = await S3Service.uploadAudio(localPath, video.id);
+
+        // 3. Создаем задачу в SpeechKit
+        const taskId = await SpeechKitService.createTask(s3Url);
+
+        // 4. Polling (опрос)
+        let isDone = false;
+        let result;
+        while (!isDone) {
+          await new Promise((r) => setTimeout(r, 5000)); // Ждем 5 сек
+          const status = await SpeechKitService.getTaskStatus(taskId);
+          if (status.done) {
+            isDone = true;
+            result = await SpeechKitService.getRecognitionResult(taskId);
+          }
+        }
+
+        // 5. Парсим результат в наши чанки
+        const parsedChunks = SpeechKitService.parseV3Response(result);
+
+        // 6. Сохраняем чанки в БД (чтобы потом не перерасходовать деньги на SpeechKit)
+        await prisma.transcriptChunk.createMany({
+          data: parsedChunks.map((c) => ({
+            videoId: video.id,
+            startTime: c.startTime,
+            endTime: c.endTime,
+            text: c.text,
+          })),
+        });
+
+        // Формируем текст для GPT
+        contextText = parsedChunks
+          .map((c) => `[${Math.floor(c.startTime)}s] ${c.text}`)
+          .join(' ');
+      } catch (e) {
+        console.error('VK Pipeline Error:', e);
+        throw new Error('Не удалось обработать видео из VK');
       }
     }
 
