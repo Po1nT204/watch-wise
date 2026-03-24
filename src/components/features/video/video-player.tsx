@@ -118,7 +118,13 @@ export function VideoPlayer({
   }
 
   if (videoData.platform === 'vk') {
-    return <VKPlayer videoId={videoData.id} />;
+    return (
+      <VKPlayer
+        videoId={videoData.id}
+        onProgress={onProgress} // Пробрасываем колбэк прогресса
+        isPaused={isPaused} // Пробрасываем состояние паузы
+      />
+    );
   }
 
   return (
