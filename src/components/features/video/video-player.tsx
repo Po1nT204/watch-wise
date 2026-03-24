@@ -2,7 +2,7 @@
 
 import { parseVideoUrl } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
-import { VKPlayer } from './vk-video-player';
+
 interface VideoPlayerProps {
   url: string;
   seekToTime: number | null;
@@ -118,12 +118,20 @@ export function VideoPlayer({
   }
 
   if (videoData.platform === 'vk') {
+    // Для VK пока оставляем просто iframe.
+    // Если "умная пауза" там критична - допишем postMessage позже.
+    // Главное сейчас - чтобы видео показывалось и проект не падал.
+    const [ownerId, id] = videoData.id.split('_');
     return (
-      <VKPlayer
-        videoId={videoData.id}
-        onProgress={onProgress} // Пробрасываем колбэк прогресса
-        isPaused={isPaused} // Пробрасываем состояние паузы
-      />
+      <div className='relative aspect-video overflow-hidden rounded-xl border bg-black shadow-sm'>
+        <iframe
+          src={`https://vk.com/video_ext.php?oid=${ownerId}&id=${id}&hd=2`}
+          className='absolute top-0 left-0 w-full h-full'
+          allow='autoplay; encrypted-media; fullscreen;'
+          frameBorder='0'
+          allowFullScreen
+        />
+      </div>
     );
   }
 
