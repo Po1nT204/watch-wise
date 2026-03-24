@@ -222,6 +222,16 @@ export const startAnalysis = async (
           })),
         });
       }
+
+      if (aiResults.flashcards && aiResults.flashcards?.length > 0) {
+        await tx.flashcard.createMany({
+          data: aiResults.flashcards.map((f: any) => ({
+            contentId: generatedContent.id,
+            term: f.term,
+            definition: f.definition,
+          })),
+        });
+      }
     });
 
     await prisma.video.update({
