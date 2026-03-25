@@ -20,8 +20,8 @@ export function VideoViewClient({ video }: { video: any }) {
     const found = questions.find(
       (q: any) =>
         // Проверяем, попало ли время (с небольшим окном)
-        currentTime >= q.timestamp &&
-        currentTime < q.timestamp + 1 &&
+        currentTime >= q.timestamp + 7 &&
+        currentTime < q.timestamp + 9 &&
         !askedQuestions.includes(q.id),
     );
 

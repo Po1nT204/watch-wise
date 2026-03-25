@@ -20,8 +20,13 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isReady, setIsReady] = useState(false);
+  const [origin, setOrigin] = useState('');
 
   const videoData = parseVideoUrl(url);
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   // Следим за командой перемотки
   useEffect(() => {
@@ -140,7 +145,7 @@ export function VideoPlayer({
       <iframe
         ref={iframeRef}
         className='absolute top-0 left-0 w-full h-full'
-        src={`https://www.youtube.com/embed/${videoData.id}?enablejsapi=1&widgetid=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+        src={`https://www.youtube.com/embed/${videoData.id}?enablejsapi=1&origin=${origin}`}
         title='YouTube video player'
         frameBorder='0'
         allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
