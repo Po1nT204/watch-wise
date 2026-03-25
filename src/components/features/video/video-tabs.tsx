@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, GraduationCap, LibraryBig } from 'lucide-react';
 import { Flashcards } from './flashcards';
 import Markdown from 'react-markdown';
+import { Button } from '@/components/ui/button';
 
 interface VideoTabsProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,8 +25,36 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
   const questions = content?.questions || [];
   const flashcards = content?.flashcards || [];
 
-  console.log(content);
-  console.log(flashcards);
+  const parseTimestamp = (ts: string) => {
+    const parts = ts.replace(/[\[\]]/g, '').split(':');
+    if (parts.length === 2) {
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+    return 0;
+  };
+
+  const renderTextWithTimestamps = (content: any) => {
+    if (typeof content !== 'string') return content;
+
+    const parts = content.split(/(\[\d{1,2}:\d{2}\])/g);
+    return parts.map((part, i) => {
+      if (part.match(/\[\d{1,2}:\d{2}\]/)) {
+        const seconds = parseTimestamp(part);
+        return (
+          <Button
+            key={i}
+            variant='link'
+            className='h-auto p-0 px-1 text-primary font-mono text-[13px] hover:no-underline hover:text-primary/80 align-baseline'
+            onClick={() => onTimestampClick(seconds)}
+          >
+            {part}
+          </Button>
+        );
+      }
+      return part;
+    });
+  };
+
   return (
     <Tabs defaultValue='summary' className='w-full h-full flex flex-col'>
       <TabsList className='grid w-full grid-cols-3 h-auto p-1'>
@@ -58,8 +87,27 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
             <ScrollArea className='flex-1 px-4 h-[450px]'>
               <div className='text-sm space-y-4 pb-4'>
                 {content?.summary ? (
-                  <div className='prose prose-sm dark:prose-invert max-w-none text-foreground leading-relaxed whitespace-pre-wrap'>
-                    <Markdown>{content.summary}</Markdown>
+                  <div className='prose prose-sm dark:prose-invert max-w-none text-foreground leading-relaxed'>
+                    <Markdown
+                      components={{
+                        // Обрабатываем параграфы
+                        p: ({ children }) => (
+                          <p>{renderTextWithTimestamps(children)}</p>
+                        ),
+                        // Обрабатываем элементы списков (критично для твоего примера!)
+                        li: ({ children }) => (
+                          <li className='ml-4 list-disc'>
+                            {renderTextWithTimestamps(children)}
+                          </li>
+                        ),
+                        // Если ИИ выделит таймкод жирным, это тоже сработает
+                        strong: ({ children }) => (
+                          <strong>{renderTextWithTimestamps(children)}</strong>
+                        ),
+                      }}
+                    >
+                      {content.summary}
+                    </Markdown>
                   </div>
                 ) : transcript.length > 0 ? (
                   <div className='space-y-4 text-muted-foreground'>
