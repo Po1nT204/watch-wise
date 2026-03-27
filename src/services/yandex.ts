@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { AIGeneratedContentSchema } from '@/shared/schemas';
 
 export class YandexCloudService {
   private static apiKey = process.env.YANDEX_API_KEY;
@@ -62,14 +63,15 @@ export class YandexCloudService {
             content: `Вот транскрипт с таймкодами: ${transcript}. 
     Сложность: ${settings.difficulty}. 
     Количество вопросов: ${settings.count}. 
-    Расставь вопросы равномерно по видео, используя реальные метки времени из текста.`,
+    Расставь вопросы равномерно по видео, используя реальные метки времени из текста, избегая начальный и конечный края видео.`,
           },
         ],
         temperature: 0.3,
       });
 
       const content = response.choices[0].message.content || '';
-      console.log(content);
+      console.log('AI Response:', content);
+
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         console.error('ИИ прислал не JSON:', content);
@@ -77,7 +79,10 @@ export class YandexCloudService {
       }
 
       const cleanJson = jsonMatch[0];
-      return JSON.parse(cleanJson);
+      const parsedJson = JSON.parse(cleanJson);
+      const validatedData = AIGeneratedContentSchema.parse(parsedJson);
+
+      return validatedData;
     } catch (error) {
       console.error('Yandex AI Studio Error:', error);
       throw error;
