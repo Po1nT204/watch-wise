@@ -45,3 +45,22 @@ export const SettingsSchema = z.object({
   location: z.string().max(100).optional().nullable(),
   links: z.record(z.string(), z.string()).optional().nullable(),
 });
+
+export const FlashcardSchema = z.object({
+  term: z.string(),
+  definition: z.string(),
+});
+
+export const QuizQuestionSchema = z.object({
+  text: z.string(),
+  timestamp: z.number().nonnegative(),
+  options: z.array(z.string()).min(2),
+  correctIdx: z.number().min(0),
+  explanation: z.string().optional().nullable(),
+});
+
+export const AIGeneratedContentSchema = z.object({
+  summary: z.string(),
+  questions: z.array(QuizQuestionSchema).optional().default([]),
+  flashcards: z.array(FlashcardSchema).optional().default([]),
+});
