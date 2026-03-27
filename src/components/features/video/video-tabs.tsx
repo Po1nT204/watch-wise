@@ -8,84 +8,133 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, GraduationCap } from 'lucide-react';
+import { FileText, GraduationCap, LibraryBig } from 'lucide-react';
+import { Flashcards } from './flashcards';
+import Markdown from 'react-markdown';
+import { Button } from '@/components/ui/button';
 
 interface VideoTabsProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  video: any; // Сюда придут данные из страницы
+  video: any;
   onTimestampClick: (time: number) => void;
 }
 
-interface Chunk {
-  id: string;
-  startTime: number;
-  text: string;
-}
-
-interface Question {
-  id: string;
-  text: string;
-  options: string[];
-}
-
 export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
-  const transcript: Chunk[] = video?.transcriptChunks || [];
+  const transcript = video?.transcriptChunks || [];
   const content = video?.generatedContents?.[0];
-  const questions: Question[] = content?.questions || [];
+  const questions = content?.questions || [];
+  const flashcards = content?.flashcards || [];
+
+  const parseTimestamp = (ts: string) => {
+    const parts = ts.replace(/[\[\]]/g, '').split(':');
+    if (parts.length === 2) {
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+    return 0;
+  };
+
+  const renderTextWithTimestamps = (content: any) => {
+    if (typeof content !== 'string') return content;
+
+    const parts = content.split(/(\[\d{1,2}:\d{2}\])/g);
+    return parts.map((part, i) => {
+      if (part.match(/\[\d{1,2}:\d{2}\]/)) {
+        const seconds = parseTimestamp(part);
+        return (
+          <Button
+            key={i}
+            variant='link'
+            className='h-auto p-0 px-1 text-primary font-mono text-[13px] hover:no-underline hover:text-primary/80 align-baseline'
+            onClick={() => onTimestampClick(seconds)}
+          >
+            {part}
+          </Button>
+        );
+      }
+      return part;
+    });
+  };
 
   return (
     <Tabs defaultValue='summary' className='w-full h-full flex flex-col'>
-      <TabsList className='grid w-full grid-cols-2'>
-        <TabsTrigger value='summary'>
-          <FileText className='w-4 h-4 mr-2' />
-          Саммари
+      <TabsList className='grid w-full grid-cols-3 h-auto p-1'>
+        <TabsTrigger
+          value='summary'
+          className='py-2 px-1 text-[13px] sm:text-sm'
+        >
+          <FileText className='w-4 h-4 mr-1 sm:mr-2 shrink-0' />
+          <span className='truncate'>Саммари</span>
         </TabsTrigger>
-        <TabsTrigger value='quiz'>
-          <GraduationCap className='w-4 h-4 mr-2' />
-          Тест
+        <TabsTrigger value='quiz' className='py-2 px-1 text-[13px] sm:text-sm'>
+          <GraduationCap className='w-4 h-4 mr-1 sm:mr-2 shrink-0' />
+          <span className='truncate'>Тест</span>
+        </TabsTrigger>
+        <TabsTrigger value='cards' className='py-2 px-1 text-[13px] sm:text-sm'>
+          <LibraryBig className='w-4 h-4 mr-1 sm:mr-2 shrink-0' />
+          <span className='truncate'>Карточки</span>
         </TabsTrigger>
       </TabsList>
 
-      {/* Контент вкладок оборачиваем в ScrollArea, чтобы скроллился только текст, а плеер стоял на месте */}
       <div className='flex-1 mt-4 min-h-0'>
         <TabsContent value='summary' className='h-full m-0'>
           <Card className='h-full flex flex-col border-none shadow-none'>
-            <CardHeader>
-              <CardTitle>Краткое содержание</CardTitle>
-              <CardDescription>Сгенерировано YandexGPT</CardDescription>
+            <CardHeader className='p-4 pb-2'>
+              <CardTitle className='text-lg'>Краткое содержание</CardTitle>
+              <CardDescription className='text-xs'>
+                Сгенерировано YandexGPT
+              </CardDescription>
             </CardHeader>
-            <ScrollArea className='flex-1 p-4 h-[400px]'>
-              <div className='text-sm space-y-4'>
-                {/* 1. Если есть Саммари от ИИ — показываем его */}
+            <ScrollArea className='flex-1 px-4 h-[450px]'>
+              <div className='text-sm space-y-4 pb-4'>
                 {content?.summary ? (
-                  <div className='prose prose-sm dark:prose-invert max-w-none text-foreground leading-relaxed whitespace-pre-wrap'>
-                    {content.summary}
+                  <div className='prose prose-sm dark:prose-invert max-w-none text-foreground leading-relaxed'>
+                    <Markdown
+                      components={{
+                        // Обрабатываем параграфы
+                        p: ({ children }) => (
+                          <p>{renderTextWithTimestamps(children)}</p>
+                        ),
+                        // Обрабатываем элементы списков (критично для твоего примера!)
+                        li: ({ children }) => (
+                          <li className='ml-4 list-disc'>
+                            {renderTextWithTimestamps(children)}
+                          </li>
+                        ),
+                        // Если ИИ выделит таймкод жирным, это тоже сработает
+                        strong: ({ children }) => (
+                          <strong>{renderTextWithTimestamps(children)}</strong>
+                        ),
+                      }}
+                    >
+                      {content.summary}
+                    </Markdown>
                   </div>
                 ) : transcript.length > 0 ? (
-                  /* 2. Если Саммари нет, но есть транскрипт — показываем его как фолбэк */
                   <div className='space-y-4 text-muted-foreground'>
-                    <p className='text-xs font-bold uppercase text-primary'>
+                    <p className='text-[10px] font-bold uppercase text-primary tracking-wider'>
                       Полный транскрипт (анализ не запущен):
                     </p>
-                    {transcript.map((chunk) => (
+                    {transcript.map((chunk: any) => (
                       <div
                         key={chunk.id}
-                        className='group cursor-pointer hover:bg-muted p-2 rounded-md transition-colors border-l-2 border-transparent hover:border-primary'
+                        className='group cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors border-l-2 border-transparent hover:border-primary'
                         onClick={() => onTimestampClick(chunk.startTime)}
                       >
-                        <span className='text-[10px] font-mono text-primary'>
+                        <span className='text-[10px] font-mono text-primary font-bold'>
                           [{Math.floor(chunk.startTime / 60)}:
                           {Math.floor(chunk.startTime % 60)
                             .toString()
                             .padStart(2, '0')}
                           ]
                         </span>
-                        <p className='mt-1 text-foreground'>{chunk.text}</p>
+                        <p className='mt-1 text-foreground text-xs leading-snug'>
+                          {chunk.text}
+                        </p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className='italic text-muted-foreground'>
+                  <p className='italic text-muted-foreground text-center py-10'>
                     Здесь появится конспект после анализа.
                   </p>
                 )}
@@ -95,19 +144,19 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
         </TabsContent>
 
         <TabsContent value='quiz' className='h-full m-0'>
-          <ScrollArea className='h-[400px] p-4'>
-            <div className='space-y-4'>
+          <ScrollArea className='h-[450px] p-4'>
+            <div className='space-y-4 pb-4'>
               {questions.length > 0 ? (
-                questions.map((q, idx) => (
-                  <Card key={q.id} className='p-4'>
-                    <p className='text-sm font-medium'>
+                questions.map((q: any, idx: number) => (
+                  <Card key={q.id} className='p-4 border-muted shadow-none'>
+                    <p className='text-sm font-semibold leading-tight'>
                       {idx + 1}. {q.text}
                     </p>
                     <div className='mt-3 grid gap-2'>
                       {q.options.map((opt: string, i: number) => (
                         <div
                           key={i}
-                          className='text-xs p-2 rounded border bg-muted/50'
+                          className='text-[12px] p-2 rounded border bg-muted/30 text-muted-foreground'
                         >
                           {opt}
                         </div>
@@ -116,12 +165,40 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
                   </Card>
                 ))
               ) : (
-                <div className='flex items-center justify-center h-[300px] text-muted-foreground border border-dashed rounded-md'>
-                  Тестирование станет доступно после анализа
+                <div className='flex flex-col items-center justify-center h-[300px] text-muted-foreground border border-dashed rounded-md text-center p-6'>
+                  <GraduationCap className='h-8 w-8 mb-2 opacity-20' />
+                  <p className='text-sm'>
+                    Тестирование станет доступно после анализа
+                  </p>
                 </div>
               )}
             </div>
           </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value='cards' className='h-full m-0'>
+          <Card className='h-full flex flex-col border-none shadow-none'>
+            <CardHeader className='p-4 pb-2'>
+              <CardTitle className='text-lg'>Флеш-карточки</CardTitle>
+              <CardDescription className='text-xs'>
+                Основные термины для запоминания
+              </CardDescription>
+            </CardHeader>
+            <ScrollArea className='flex-1 px-4 h-[450px]'>
+              {flashcards.length > 0 ? (
+                <div className='pb-6'>
+                  <Flashcards cards={flashcards} />
+                </div>
+              ) : (
+                <div className='flex flex-col items-center justify-center h-[300px] text-muted-foreground border border-dashed rounded-md text-center p-6'>
+                  <LibraryBig className='h-8 w-8 mb-2 opacity-20' />
+                  <p className='text-sm'>
+                    Карточки появятся после анализа видео
+                  </p>
+                </div>
+              )}
+            </ScrollArea>
+          </Card>
         </TabsContent>
       </div>
     </Tabs>

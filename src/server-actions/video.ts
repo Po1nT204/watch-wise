@@ -7,7 +7,6 @@ import prisma from '@/config/prisma';
 import { parseVideoUrl } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 import { YandexCloudService } from '@/services/yandex';
-import { YoutubeTranscript } from 'youtube-transcript';
 import { YoutubeService } from '@/services/youtube';
 import { S3Service } from '@/services/s3';
 import { SpeechKitService } from '@/services/speechkit';
@@ -197,11 +196,14 @@ export const startAnalysis = async (
       },
     );
 
+    const userId = session.user.id;
+    if (!userId) throw new Error('User ID not found in session');
+
     await prisma.$transaction(async (tx) => {
       const generatedContent = await tx.generatedContent.create({
         data: {
           videoId: videoId,
-          userId: session.user.id,
+          userId: userId,
           difficulty: settings.difficulty,
           mode: settings.mode,
           summary: aiResults.summary,
@@ -217,6 +219,16 @@ export const startAnalysis = async (
             options: q.options,
             correctIdx: q.correctIdx,
             explanation: q.explanation,
+          })),
+        });
+      }
+
+      if (aiResults.flashcards && aiResults.flashcards?.length > 0) {
+        await tx.flashcard.createMany({
+          data: aiResults.flashcards.map((f: any) => ({
+            contentId: generatedContent.id,
+            term: f.term,
+            definition: f.definition,
           })),
         });
       }

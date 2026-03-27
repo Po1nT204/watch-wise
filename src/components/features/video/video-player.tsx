@@ -2,7 +2,7 @@
 
 import { parseVideoUrl } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
-import { VKPlayer } from './vk-video-player';
+
 interface VideoPlayerProps {
   url: string;
   seekToTime: number | null;
@@ -20,8 +20,13 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isReady, setIsReady] = useState(false);
+  const [origin, setOrigin] = useState('');
 
   const videoData = parseVideoUrl(url);
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   // Следим за командой перемотки
   useEffect(() => {
@@ -118,12 +123,20 @@ export function VideoPlayer({
   }
 
   if (videoData.platform === 'vk') {
+    // Для VK пока оставляем просто iframe.
+    // Если "умная пауза" там критична - допишем postMessage позже.
+    // Главное сейчас - чтобы видео показывалось и проект не падал.
+    const [ownerId, id] = videoData.id.split('_');
     return (
-      <VKPlayer
-        videoId={videoData.id}
-        onProgress={onProgress} // Пробрасываем колбэк прогресса
-        isPaused={isPaused} // Пробрасываем состояние паузы
-      />
+      <div className='relative aspect-video overflow-hidden rounded-xl border bg-black shadow-sm'>
+        <iframe
+          src={`https://vk.com/video_ext.php?oid=${ownerId}&id=${id}&hd=2`}
+          className='absolute top-0 left-0 w-full h-full'
+          allow='autoplay; encrypted-media; fullscreen;'
+          frameBorder='0'
+          allowFullScreen
+        />
+      </div>
     );
   }
 
@@ -132,7 +145,7 @@ export function VideoPlayer({
       <iframe
         ref={iframeRef}
         className='absolute top-0 left-0 w-full h-full'
-        src={`https://www.youtube.com/embed/${videoData.id}?enablejsapi=1&widgetid=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+        src={`https://www.youtube.com/embed/${videoData.id}?enablejsapi=1&origin=${origin}`}
         title='YouTube video player'
         frameBorder='0'
         allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'

@@ -68,6 +68,7 @@ export const getVideoById = async (videoId: string, userId: string) => {
           where: { userId },
           include: {
             questions: true,
+            flashcards: true,
           },
           take: 1,
         },
