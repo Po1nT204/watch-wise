@@ -123,70 +123,81 @@ export const startAnalysis = async (
       contextText = video.transcriptChunks
         .map((c) => `[${Math.floor(c.startTime)}s] ${c.text}`)
         .join(' ');
-    }
-    // Если это YouTube и в базе пусто — тянем через библиотеку
-    else if (video.platform === 'youtube') {
-      try {
-        contextText = await YoutubeService.fetchAndSaveTranscript(
-          video.url,
-          video.id,
-        );
-      } catch (e) {
-        console.error('Ошибка получения субтитров:', e);
-        console.warn(
-          'Не удалось получить субтитры YouTube, используем метаданные',
-        );
-        contextText = `Название: ${video.title}. Описание отсутствует. Работаем только с названием.`;
-      }
-    } else if (video.platform === 'vk') {
-      try {
-        // 1. Извлекаем аудио локально
-        const localPath = await VideoDownloader.extractAudio(
-          video.url,
-          video.id,
-        );
+    } else {
+      // Флаг, указывающий, нужно ли нам прогонять аудио через SpeechKit
+      let needsAudioExtraction = video.platform === 'vk';
 
-        // 2. Загружаем в S3
-        const s3Url = await S3Service.uploadAudio(localPath, video.id);
-
-        // 3. Создаем задачу в SpeechKit
-        const taskId = await SpeechKitService.createTask(s3Url);
-
-        // 4. Polling (опрос)
-        let isDone = false;
-        let result;
-        while (!isDone) {
-          await new Promise((r) => setTimeout(r, 5000)); // Ждем 5 сек
-          const status = await SpeechKitService.getTaskStatus(taskId);
-          if (status.done) {
-            isDone = true;
-            result = await SpeechKitService.getRecognitionResult(taskId);
-          }
+      // Если это YouTube, сначала пробуем быстро получить субтитры
+      if (video.platform === 'youtube') {
+        try {
+          contextText = await YoutubeService.fetchAndSaveTranscript(
+            video.url,
+            video.id,
+          );
+        } catch (e) {
+          console.warn(
+            `[YouTube] Нет субтитров для ${video.id}. Включаем резервный пайплайн (аудио -> SpeechKit)...`,
+          );
+          needsAudioExtraction = true; // Фоллбэк активирован
         }
+      }
 
-        // 5. Парсим результат в наши чанки
-        const parsedChunks = SpeechKitService.parseV3Response(result);
+      // Общий пайплайн извлечения аудио и распознавания (VK + YouTube Fallback)
+      if (needsAudioExtraction) {
+        try {
+          // 1. Извлекаем аудио локально
+          const localPath = await VideoDownloader.extractAudio(
+            video.url,
+            video.id,
+          );
 
-        // 6. Сохраняем чанки в БД (чтобы потом не перерасходовать деньги на SpeechKit)
-        await prisma.transcriptChunk.createMany({
-          data: parsedChunks.map((c) => ({
-            videoId: video.id,
-            startTime: c.startTime,
-            endTime: c.endTime,
-            text: c.text,
-          })),
-        });
+          // 2. Загружаем в S3
+          const s3Url = await S3Service.uploadAudio(localPath, video.id);
 
-        // Формируем текст для GPT
-        contextText = parsedChunks
-          .map((c) => `[${Math.floor(c.startTime)}s] ${c.text}`)
-          .join(' ');
-      } catch (e) {
-        console.error('VK Pipeline Error:', e);
-        throw new Error('Не удалось обработать видео из VK');
+          // 3. Создаем задачу в SpeechKit
+          const taskId = await SpeechKitService.createTask(s3Url);
+
+          // 4. Polling (опрос)
+          let isDone = false;
+          let result;
+          while (!isDone) {
+            await new Promise((r) => setTimeout(r, 5000)); // Ждем 5 сек
+            const status = await SpeechKitService.getTaskStatus(taskId);
+            if (status.done) {
+              isDone = true;
+              result = await SpeechKitService.getRecognitionResult(taskId);
+            }
+          }
+
+          // 5. Парсим результат в наши чанки
+          const parsedChunks = SpeechKitService.parseV3Response(result);
+
+          if (parsedChunks.length === 0) {
+            throw new Error('SpeechKit вернул пустой результат');
+          }
+
+          // 6. Сохраняем чанки в БД (чтобы потом не перерасходовать деньги на SpeechKit)
+          await prisma.transcriptChunk.createMany({
+            data: parsedChunks.map((c) => ({
+              videoId: video.id,
+              startTime: c.startTime,
+              endTime: c.endTime,
+              text: c.text,
+            })),
+          });
+
+          // 7. Формируем текст для GPT
+          contextText = parsedChunks
+            .map((c) => `[${Math.floor(c.startTime)}s] ${c.text}`)
+            .join(' ');
+        } catch (e) {
+          console.error('Audio Extraction / SpeechKit Pipeline Error:', e);
+          throw new Error(
+            'Не удалось получить транскрипт (ни через субтитры, ни через аудио-распознавание)',
+          );
+        }
       }
     }
-
     // 3. Вызываем YandexGPT
     const aiResults = await YandexCloudService.generateLearningContent(
       contextText,
