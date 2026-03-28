@@ -6,17 +6,31 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Activity, ArrowRight, PlayCircle, Users } from 'lucide-react';
+import {
+  Activity,
+  ArrowRight,
+  CheckCircle2,
+  LibraryBig,
+  PlayCircle,
+  Target,
+  Users,
+} from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { getVideosByUserId } from '@/services/video';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { getUserDashboardStats } from '@/services/analytics';
+
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
 
-  const allVideos = await getVideosByUserId(session.user.id);
-  const recentVideos = allVideos.slice(0, 3); // Только последние 3
+  const [allVideos, stats] = await Promise.all([
+    getVideosByUserId(session.user.id),
+    getUserDashboardStats(session.user.id),
+  ]);
+
+  const recentVideos = allVideos.slice(0, 3);
 
   return (
     <div className='flex flex-col gap-8 p-4 md:p-8'>
@@ -39,13 +53,43 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-sm font-medium'>Тесты</CardTitle>
-            <Users className='h-4 w-4 text-muted-foreground' />
+            <CardTitle className='text-sm font-medium'>
+              Завершено тестов
+            </CardTitle>
+            <CheckCircle2 className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-3xl font-bold'>0</div>
+            <div className='text-3xl font-bold'>{stats.totalTests}</div>
             <p className='text-xs text-muted-foreground mt-1'>
-              Пройдено успешно
+              Отвечено на {stats.totalQuestions} вопросов
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className='flex flex-row items-center justify-between pb-2'>
+            <CardTitle className='text-sm font-medium'>
+              Точность ответов
+            </CardTitle>
+            <Target className='h-4 w-4 text-muted-foreground' />
+          </CardHeader>
+          <CardContent>
+            <div className='text-3xl font-bold'>{stats.accuracy}%</div>
+            <p className='text-xs text-muted-foreground mt-1'>
+              Средний балл успеваемости
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className='flex flex-row items-center justify-between pb-2'>
+            <CardTitle className='text-sm font-medium'>База знаний</CardTitle>
+            <LibraryBig className='h-4 w-4 text-muted-foreground' />
+          </CardHeader>
+          <CardContent>
+            <div className='text-3xl font-bold'>{stats.flashcardsCount}</div>
+            <p className='text-xs text-muted-foreground mt-1'>
+              Терминов в карточках
             </p>
           </CardContent>
         </Card>
