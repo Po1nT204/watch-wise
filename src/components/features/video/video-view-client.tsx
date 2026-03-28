@@ -1,17 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { VideoPlayer } from './video-player';
 import { VideoTabs } from './video-tabs';
 import { AnalysisControl } from './analysis-control';
 import { QuizOverlay } from './quiz-overlay';
+import { useVideoStore } from '@/store/video';
+import { saveQuizResult } from '@/server-actions/progress';
+import { toast } from 'sonner';
 
 export function VideoViewClient({ video }: { video: any }) {
   const [seekTo, setSeekTo] = useState<number | null>(null);
-  const [askedQuestions, setAskedQuestions] = useState<string[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
-  const questions = video?.generatedContents?.[0]?.questions || [];
+
+  const { score, askedQuestionIds, incrementScore, addAskedQuestion, reset } =
+    useVideoStore();
+
+  const content = video?.generatedContents?.[0];
+  const questions = content?.questions || [];
+
+  // Сбрасываем стейт при монтировании нового видео
+  useEffect(() => {
+    reset();
+  }, [video.id, reset]);
 
   const handleProgress = (currentTime: number) => {
     // Ищем вопрос, время которого подошло (с погрешностью в 1 сек)
@@ -22,20 +34,44 @@ export function VideoViewClient({ video }: { video: any }) {
         // Проверяем, попало ли время (с небольшим окном)
         currentTime >= q.timestamp + 7 &&
         currentTime < q.timestamp + 9 &&
-        !askedQuestions.includes(q.id),
+        !askedQuestionIds.includes(q.id),
     );
 
     if (found) {
-      setAskedQuestions((prev) => [...prev, found.id]);
       setCurrentQuestion(found);
       setIsPaused(true); // Отправляем проп в VideoPlayer
     }
   };
 
-  const handleAnswer = (isCorrect: boolean) => {
-    // Здесь позже можно добавить логику сохранения в БД
+  const handleAnswer = async (isCorrect: boolean) => {
+    if (isCorrect) incrementScore();
+    addAskedQuestion(currentQuestion.id);
+
+    const isLastQuestion = askedQuestionIds.length + 1 === questions.length;
+
     setCurrentQuestion(null);
     setIsPaused(false);
+
+    if (isLastQuestion && content) {
+      const finalScore = isCorrect ? score + 1 : score;
+      const result = await saveQuizResult(
+        content.id,
+        video.id,
+        finalScore,
+        questions.length,
+      );
+
+      if (result.success) {
+        toast.success(
+          `Тест завершен! Результат: ${finalScore} из ${questions.length}`,
+          {
+            duration: 5000,
+          },
+        );
+      } else {
+        toast.error('Не удалось сохранить результат тестирования.');
+      }
+    }
   };
 
   return (
