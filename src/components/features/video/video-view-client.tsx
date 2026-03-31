@@ -79,6 +79,7 @@ export function VideoViewClient({ video }: { video: any }) {
       <div className='flex flex-col gap-4 relative'>
         <VideoPlayer
           url={video.url}
+          cloudUrl={video.cloudUrl}
           seekToTime={seekTo}
           onSeekComplete={() => setSeekTo(null)}
           onProgress={handleProgress}
