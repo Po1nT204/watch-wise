@@ -21,8 +21,8 @@ interface VideoTabsProps {
 }
 
 export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
-  // Делаем табы управляемыми
   const [activeTab, setActiveTab] = useState('summary');
+  const [activeCardIndex, setActiveCardIndex] = useState(0); // <-- Добавили стейт
 
   const transcript = video?.transcriptChunks || [];
   const content = video?.generatedContents?.[0];
@@ -37,18 +37,19 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
     return 0;
   };
 
-  // Функция переключения на карточки
-  const handleTermClick = (term: string) => {
+  const handleTermClick = (matchedTerm: string) => {
+    // Находим индекс кликнутого термина
+    const index = flashcards.findIndex((f: any) => f.term === matchedTerm);
+    if (index !== -1) {
+      setActiveCardIndex(index); // Обновляем индекс для карточек
+    }
     setActiveTab('cards');
   };
 
-  // Парсер: ищет и таймкоды, и термины из карточек
   const processText = (text: string) => {
-    // 1. Разбиваем текст по таймкодам [MM:SS]
     const parts = text.split(/(\[\d{1,2}:\d{2}\])/g);
 
     return parts.map((part, i) => {
-      // Если это таймкод — делаем кнопку
       if (part.match(/\[\d{1,2}:\d{2}\]/)) {
         const seconds = parseTimestamp(part);
         return (
@@ -63,24 +64,19 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
         );
       }
 
-      // 2. Если это обычный текст, ищем в нем термины (если они есть)
       if (flashcards.length > 0) {
-        // Сортируем термины по длине (по убыванию), чтобы "База данных" находилась раньше чем "База"
         const terms = flashcards
           .map((f: any) => f.term)
           .sort((a: string, b: string) => b.length - a.length);
 
-        // Экранируем символы для регулярки
         const escapedTerms = terms.map((t: string) =>
           t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
         );
 
-        // gi - глобальный поиск без учета регистра
         const regex = new RegExp(`(${escapedTerms.join('|')})`, 'gi');
         const subParts = part.split(regex);
 
         return subParts.map((subPart, j) => {
-          // Проверяем, является ли кусок текста нашим термином
           const matchedTerm = terms.find(
             (t: string) => t.toLowerCase() === subPart.toLowerCase(),
           );
@@ -90,7 +86,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
               <span
                 key={`term-${i}-${j}`}
                 className='border-b border-dashed border-primary/70 text-primary cursor-pointer hover:bg-primary/10 transition-colors font-semibold'
-                title='Перейти к изучению термина'
+                title='Перейти к определению'
                 onClick={() => handleTermClick(matchedTerm)}
               >
                 {subPart}
@@ -105,7 +101,6 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
     });
   };
 
-  // Рекурсивный обход узлов React Markdown
   const processContent = (nodeContent: any): any => {
     if (typeof nodeContent === 'string') {
       return processText(nodeContent);
@@ -249,7 +244,11 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
             <ScrollArea className='flex-1 px-4 h-[450px]'>
               {flashcards.length > 0 ? (
                 <div className='pb-6'>
-                  <Flashcards cards={flashcards} />
+                  {/* Передаем индекс в компонент */}
+                  <Flashcards
+                    cards={flashcards}
+                    activeIndex={activeCardIndex}
+                  />
                 </div>
               ) : (
                 <div className='flex flex-col items-center justify-center h-[300px] text-muted-foreground border border-dashed rounded-md text-center p-6'>
