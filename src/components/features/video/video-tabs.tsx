@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Card,
@@ -20,6 +21,9 @@ interface VideoTabsProps {
 }
 
 export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
+  const [activeTab, setActiveTab] = useState('summary');
+  const [activeCardIndex, setActiveCardIndex] = useState(0); // <-- Добавили стейт
+
   const transcript = video?.transcriptChunks || [];
   const content = video?.generatedContents?.[0];
   const questions = content?.questions || [];
@@ -33,16 +37,24 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
     return 0;
   };
 
-  const renderTextWithTimestamps = (content: any) => {
-    if (typeof content !== 'string') return content;
+  const handleTermClick = (matchedTerm: string) => {
+    // Находим индекс кликнутого термина
+    const index = flashcards.findIndex((f: any) => f.term === matchedTerm);
+    if (index !== -1) {
+      setActiveCardIndex(index); // Обновляем индекс для карточек
+    }
+    setActiveTab('cards');
+  };
 
-    const parts = content.split(/(\[\d{1,2}:\d{2}\])/g);
+  const processText = (text: string) => {
+    const parts = text.split(/(\[\d{1,2}:\d{2}\])/g);
+
     return parts.map((part, i) => {
       if (part.match(/\[\d{1,2}:\d{2}\]/)) {
         const seconds = parseTimestamp(part);
         return (
           <Button
-            key={i}
+            key={`ts-${i}`}
             variant='link'
             className='h-auto p-0 px-1 text-primary font-mono text-[13px] hover:no-underline hover:text-primary/80 align-baseline'
             onClick={() => onTimestampClick(seconds)}
@@ -51,12 +63,62 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
           </Button>
         );
       }
+
+      if (flashcards.length > 0) {
+        const terms = flashcards
+          .map((f: any) => f.term)
+          .sort((a: string, b: string) => b.length - a.length);
+
+        const escapedTerms = terms.map((t: string) =>
+          t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+        );
+
+        const regex = new RegExp(`(${escapedTerms.join('|')})`, 'gi');
+        const subParts = part.split(regex);
+
+        return subParts.map((subPart, j) => {
+          const matchedTerm = terms.find(
+            (t: string) => t.toLowerCase() === subPart.toLowerCase(),
+          );
+
+          if (matchedTerm) {
+            return (
+              <span
+                key={`term-${i}-${j}`}
+                className='border-b border-dashed border-primary/70 text-primary cursor-pointer hover:bg-primary/10 transition-colors font-semibold'
+                title='Перейти к определению'
+                onClick={() => handleTermClick(matchedTerm)}
+              >
+                {subPart}
+              </span>
+            );
+          }
+          return subPart;
+        });
+      }
+
       return part;
     });
   };
 
+  const processContent = (nodeContent: any): any => {
+    if (typeof nodeContent === 'string') {
+      return processText(nodeContent);
+    }
+    if (Array.isArray(nodeContent)) {
+      return nodeContent.map((child, i) => (
+        <React.Fragment key={i}>{processContent(child)}</React.Fragment>
+      ));
+    }
+    return nodeContent;
+  };
+
   return (
-    <Tabs defaultValue='summary' className='w-full h-full flex flex-col'>
+    <Tabs
+      value={activeTab}
+      onValueChange={setActiveTab}
+      className='w-full h-full flex flex-col'
+    >
       <TabsList className='grid w-full grid-cols-3 h-auto p-1'>
         <TabsTrigger
           value='summary'
@@ -90,19 +152,14 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
                   <div className='prose prose-sm dark:prose-invert max-w-none text-foreground leading-relaxed'>
                     <Markdown
                       components={{
-                        // Обрабатываем параграфы
-                        p: ({ children }) => (
-                          <p>{renderTextWithTimestamps(children)}</p>
-                        ),
-                        // Обрабатываем элементы списков (критично для твоего примера!)
+                        p: ({ children }) => <p>{processContent(children)}</p>,
                         li: ({ children }) => (
                           <li className='ml-4 list-disc'>
-                            {renderTextWithTimestamps(children)}
+                            {processContent(children)}
                           </li>
                         ),
-                        // Если ИИ выделит таймкод жирным, это тоже сработает
                         strong: ({ children }) => (
-                          <strong>{renderTextWithTimestamps(children)}</strong>
+                          <strong>{processContent(children)}</strong>
                         ),
                       }}
                     >
@@ -187,7 +244,11 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
             <ScrollArea className='flex-1 px-4 h-[450px]'>
               {flashcards.length > 0 ? (
                 <div className='pb-6'>
-                  <Flashcards cards={flashcards} />
+                  {/* Передаем индекс в компонент */}
+                  <Flashcards
+                    cards={flashcards}
+                    activeIndex={activeCardIndex}
+                  />
                 </div>
               ) : (
                 <div className='flex flex-col items-center justify-center h-[300px] text-muted-foreground border border-dashed rounded-md text-center p-6'>

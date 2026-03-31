@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
@@ -13,16 +13,29 @@ interface Flashcard {
   definition: string;
 }
 
-export function Flashcards({ cards }: { cards: Flashcard[] }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export function Flashcards({ 
+  cards, 
+  activeIndex = 0 
+}: { 
+  cards: Flashcard[];
+  activeIndex?: number;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(activeIndex);
   const [isFlipped, setIsFlipped] = useState(false);
+
+  // Синхронизируем внешний клик из текста с внутренним индексом карточки
+  useEffect(() => {
+    setCurrentIndex(activeIndex);
+    // Отличный UX: если перешли по клику из текста - сразу показываем определение
+    setIsFlipped(true); 
+  }, [activeIndex]);
 
   if (!cards.length) return null;
 
   const currentCard = cards[currentIndex];
 
   const nextCard = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Чтобы карточка не переворачивалась при клике на кнопку
+    e.stopPropagation();
     setIsFlipped(false);
     setTimeout(() => setCurrentIndex((prev) => (prev + 1) % cards.length), 100);
   };
@@ -38,7 +51,6 @@ export function Flashcards({ cards }: { cards: Flashcard[] }) {
 
   return (
     <div className='flex flex-col items-center gap-3 w-full max-w-full overflow-hidden px-1'>
-      {/* Сцена карточки с уменьшенной высотой и адаптивной шириной */}
       <div
         className='relative w-full aspect-[4/3] min-h-[220px] cursor-pointer perspective-1000'
         onClick={() => setIsFlipped(!isFlipped)}
