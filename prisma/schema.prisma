@@ -86,6 +86,7 @@ model Video {
   title       String?
   thumbnail   String?
   duration    Int?
+  cloudUrl    String?
   
   // Транскрипт хранится как JSONB (оптимизировано в Postgres)
   transcript  Json?    
