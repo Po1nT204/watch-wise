@@ -40,4 +40,28 @@ export class S3Service {
       throw new Error('Ошибка при загрузке аудио в облако');
     }
   }
+
+  static async uploadVideo(filePath: string, videoId: string): Promise<string> {
+    const bucketName = process.env.YANDEX_STORAGE_BUCKET_NAME;
+    if (!bucketName) throw new Error('YANDEX_STORAGE_BUCKET_NAME не определен');
+
+    const fileContent = fs.readFileSync(filePath);
+    const key = `video/${videoId}.mp4`;
+    const client = this.getClient();
+
+    try {
+      await client.send(
+        new PutObjectCommand({
+          Bucket: bucketName,
+          Key: key,
+          Body: fileContent,
+          ContentType: 'video/mp4',
+        }),
+      );
+      return `https://storage.yandexcloud.net/${bucketName}/${key}`;
+    } catch (error) {
+      console.error('[S3Service] Video Upload failed:', error);
+      throw new Error('Ошибка при загрузке видео в облако');
+    }
+  }
 }

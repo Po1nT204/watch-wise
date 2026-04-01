@@ -145,17 +145,26 @@ export const startAnalysis = async (
       // Общий пайплайн извлечения аудио и распознавания (VK + YouTube Fallback)
       if (needsAudioExtraction) {
         try {
-          // 1. Извлекаем аудио локально
-          const localPath = await VideoDownloader.extractAudio(
-            video.url,
-            video.id,
-          );
+          // 1. ЗАПУСКАЕМ СКАЧИВАНИЕ ПАРАЛЛЕЛЬНО (Audio + Video 480p)
+          const [localAudioPath, localVideoPath] = await Promise.all([
+            VideoDownloader.extractAudio(video.url, video.id),
+            VideoDownloader.extractVideo(video.url, video.id, 480), // Ограничение в 480p
+          ]);
 
-          // 2. Загружаем в S3
-          const s3Url = await S3Service.uploadAudio(localPath, video.id);
+          // 2. ЗАГРУЖАЕМ В S3 ПАРАЛЛЕЛЬНО
+          const [s3AudioUrl, s3VideoUrl] = await Promise.all([
+            S3Service.uploadAudio(localAudioPath, video.id),
+            S3Service.uploadVideo(localVideoPath, video.id),
+          ]);
 
-          // 3. Создаем задачу в SpeechKit
-          const taskId = await SpeechKitService.createTask(s3Url);
+          // Сохраняем ссылку на видео в БД, чтобы фронтенд мог её сразу использовать
+          await prisma.video.update({
+            where: { id: video.id },
+            data: { cloudUrl: s3VideoUrl },
+          });
+
+          // 3. Отправляем АУДИО в SpeechKit
+          const taskId = await SpeechKitService.createTask(s3AudioUrl);
 
           // 4. Polling (опрос)
           let isDone = false;
@@ -169,12 +178,10 @@ export const startAnalysis = async (
             }
           }
 
-          // 5. Парсим результат в наши чанки
+          // 5. Парсим результат в чанки
           const parsedChunks = SpeechKitService.parseV3Response(result);
-
-          if (parsedChunks.length === 0) {
+          if (parsedChunks.length === 0)
             throw new Error('SpeechKit вернул пустой результат');
-          }
 
           // 6. Сохраняем чанки в БД (чтобы потом не перерасходовать деньги на SpeechKit)
           await prisma.transcriptChunk.createMany({
@@ -193,7 +200,7 @@ export const startAnalysis = async (
         } catch (e) {
           console.error('Audio Extraction / SpeechKit Pipeline Error:', e);
           throw new Error(
-            'Не удалось получить транскрипт (ни через субтитры, ни через аудио-распознавание)',
+            'Не удалось получить транскрипт (ни через субтитры, ни через аудио-распознавание) или загрузить видео',
           );
         }
       }

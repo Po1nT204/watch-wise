@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 interface VideoPlayerProps {
   url: string;
+  cloudUrl?: string | null;
   seekToTime: number | null;
   onSeekComplete: () => void;
   onProgress?: (currentTime: number) => void;
@@ -13,12 +14,14 @@ interface VideoPlayerProps {
 
 export function VideoPlayer({
   url,
+  cloudUrl,
   seekToTime,
   onSeekComplete,
   onProgress,
   isPaused,
 }: VideoPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const htmlVideoRef = useRef<HTMLVideoElement>(null);
   const [isReady, setIsReady] = useState(false);
   const [origin, setOrigin] = useState('');
 
@@ -28,7 +31,34 @@ export function VideoPlayer({
     setOrigin(window.location.origin);
   }, []);
 
-  // Следим за командой перемотки
+  // --- ЛОГИКА ДЛЯ HTML5 ПЛЕЕРА (Наш S3 VK) ---
+
+  // 1. Управление паузой/воспроизведением
+  useEffect(() => {
+    if (!htmlVideoRef.current) return;
+
+    if (isPaused) {
+      htmlVideoRef.current.pause();
+    } else {
+      // Игнорируем ошибку автоплея при первой загрузке страницы
+      htmlVideoRef.current.play().catch(() => {});
+    }
+  }, [isPaused]);
+
+  // 2. Управление перемоткой (seek)
+  useEffect(() => {
+    if (htmlVideoRef.current && seekToTime !== null) {
+      htmlVideoRef.current.currentTime = seekToTime;
+      htmlVideoRef.current.play().catch(() => {});
+      onSeekComplete();
+    }
+    // Отключаем правило линтера, так как onSeekComplete меняет ссылку каждый рендер
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seekToTime]);
+
+  // --- ЛОГИКА ДЛЯ YOUTUBE IFRAME ---
+
+  // 1. Перемотка
   useEffect(() => {
     if (
       videoData?.platform === 'youtube' &&
@@ -36,7 +66,6 @@ export function VideoPlayer({
       iframeRef.current &&
       isReady
     ) {
-      // Отправляем команду напрямую в IFrame через postMessage (стандарт YouTube API)
       iframeRef.current.contentWindow?.postMessage(
         JSON.stringify({
           event: 'command',
@@ -45,25 +74,19 @@ export function VideoPlayer({
         }),
         '*',
       );
-
-      // Запускаем видео, если оно было на паузе
       iframeRef.current.contentWindow?.postMessage(
-        JSON.stringify({
-          event: 'command',
-          func: 'playVideo',
-          args: [],
-        }),
+        JSON.stringify({ event: 'command', func: 'playVideo', args: [] }),
         '*',
       );
-
       onSeekComplete();
     }
-  }, [seekToTime, isReady, videoData, onSeekComplete]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seekToTime, isReady, videoData?.platform]);
 
+  // 2. Опрос прогресса
   useEffect(() => {
     if (videoData?.platform !== 'youtube' || !isReady) return;
 
-    // Каждые 1000мс просим у YouTube текущее время
     const interval = setInterval(() => {
       iframeRef.current?.contentWindow?.postMessage(
         JSON.stringify({ event: 'listening', id: 1 }),
@@ -75,7 +98,6 @@ export function VideoPlayer({
       );
     }, 1000);
 
-    // Слушаем ответ от iframe
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
@@ -84,15 +106,13 @@ export function VideoPlayer({
           data.info &&
           data.info.currentTime
         ) {
-          // 1 = playing
-          // Можно обрабатывать старт
           onProgress?.(data.info.currentTime);
         }
         if (typeof data.info === 'number' && data.event !== 'onStateChange') {
           onProgress?.(data.info);
         }
       } catch (e) {
-        console.error(e);
+        // Игнорируем мусорные сообщения
       }
     };
 
@@ -101,31 +121,45 @@ export function VideoPlayer({
       clearInterval(interval);
       window.removeEventListener('message', handleMessage);
     };
-  }, [isReady, videoData, onProgress]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady, videoData?.platform]);
 
+  // 3. Пауза
   useEffect(() => {
-    if (!isReady || !iframeRef.current) return;
-
-    const command = isPaused ? 'pauseVideo' : 'playVideo';
-
-    iframeRef.current.contentWindow?.postMessage(
-      JSON.stringify({ event: 'command', func: command, args: [] }),
-      '*',
-    );
-  }, [isPaused, isReady]);
+    if (videoData?.platform === 'youtube' && isReady && iframeRef.current) {
+      const command = isPaused ? 'pauseVideo' : 'playVideo';
+      iframeRef.current.contentWindow?.postMessage(
+        JSON.stringify({ event: 'command', func: command, args: [] }),
+        '*',
+      );
+    }
+  }, [isPaused, isReady, videoData?.platform]);
 
   if (!videoData) {
     return (
       <div className='aspect-video bg-muted flex items-center justify-center rounded-xl'>
-        Неверная ссылка на видео
+        Неверная ссылка
       </div>
     );
   }
 
-  if (videoData.platform === 'vk') {
-    // Для VK пока оставляем просто iframe.
-    // Если "умная пауза" там критична - допишем postMessage позже.
-    // Главное сейчас - чтобы видео показывалось и проект не падал.
+  // --- РЕНДЕР HTML5 ПЛЕЕРА ДЛЯ VK (ИЛИ ФОЛЛБЭКА) ---
+  if (videoData.platform === 'vk' || cloudUrl) {
+    if (cloudUrl) {
+      return (
+        <div className='relative aspect-video overflow-hidden rounded-xl border bg-black shadow-sm'>
+          <video
+            ref={htmlVideoRef}
+            src={cloudUrl}
+            controls
+            preload='metadata'
+            className='w-full h-full'
+            onTimeUpdate={(e) => onProgress?.(e.currentTarget.currentTime)}
+          />
+        </div>
+      );
+    }
+
     const [ownerId, id] = videoData.id.split('_');
     return (
       <div className='relative aspect-video overflow-hidden rounded-xl border bg-black shadow-sm'>
@@ -140,6 +174,7 @@ export function VideoPlayer({
     );
   }
 
+  // --- РЕНДЕР YOUTUBE ---
   return (
     <div className='relative aspect-video overflow-hidden rounded-xl border bg-black shadow-sm'>
       <iframe
