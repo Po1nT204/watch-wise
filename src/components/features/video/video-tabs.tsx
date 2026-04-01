@@ -22,35 +22,52 @@ interface VideoTabsProps {
 
 export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
   const [activeTab, setActiveTab] = useState('summary');
-  const [activeCardIndex, setActiveCardIndex] = useState(0); // <-- Добавили стейт
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
 
   const transcript = video?.transcriptChunks || [];
   const content = video?.generatedContents?.[0];
   const questions = content?.questions || [];
   const flashcards = content?.flashcards || [];
 
+  // Универсальный парсер: понимает и [12:34], и [164s]
   const parseTimestamp = (ts: string) => {
-    const parts = ts.replace(/[\[\]]/g, '').split(':');
+    const cleanTs = ts.replace(/[\[\]]/g, '');
+
+    // Если формат "164s"
+    if (cleanTs.endsWith('s')) {
+      return parseInt(cleanTs.replace('s', ''), 10);
+    }
+
+    // Если формат "MM:SS"
+    const parts = cleanTs.split(':');
     if (parts.length === 2) {
       return parseInt(parts[0]) * 60 + parseInt(parts[1]);
     }
     return 0;
   };
 
+  // Красивое форматирование для UI (переводит секунды в [MM:SS])
+  const formatDisplayTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `[${m}:${s.toString().padStart(2, '0')}]`;
+  };
+
   const handleTermClick = (matchedTerm: string) => {
-    // Находим индекс кликнутого термина
     const index = flashcards.findIndex((f: any) => f.term === matchedTerm);
     if (index !== -1) {
-      setActiveCardIndex(index); // Обновляем индекс для карточек
+      setActiveCardIndex(index);
     }
     setActiveTab('cards');
   };
 
   const processText = (text: string) => {
-    const parts = text.split(/(\[\d{1,2}:\d{2}\])/g);
+    // Регулярка теперь ищет ДВА формата: либо [MM:SS], либо [число+s]
+    const parts = text.split(/(\[\d{1,2}:\d{2}\]|\[\d+s\])/g);
 
     return parts.map((part, i) => {
-      if (part.match(/\[\d{1,2}:\d{2}\]/)) {
+      // Проверяем, является ли кусок одним из форматов таймкода
+      if (part.match(/^\[\d{1,2}:\d{2}\]$|^\[\d+s\]$/)) {
         const seconds = parseTimestamp(part);
         return (
           <Button
@@ -59,7 +76,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
             className='h-auto p-0 px-1 text-primary font-mono text-[13px] hover:no-underline hover:text-primary/80 align-baseline'
             onClick={() => onTimestampClick(seconds)}
           >
-            {part}
+            {formatDisplayTime(seconds)}
           </Button>
         );
       }
@@ -244,7 +261,6 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
             <ScrollArea className='flex-1 px-4 h-[450px]'>
               {flashcards.length > 0 ? (
                 <div className='pb-6'>
-                  {/* Передаем индекс в компонент */}
                   <Flashcards
                     cards={flashcards}
                     activeIndex={activeCardIndex}

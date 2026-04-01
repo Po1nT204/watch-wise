@@ -50,7 +50,7 @@ export class VideoDownloader {
         // Ищем лучшее качество, но не выше заданного height
         .format(`best[height<=${height}][ext=mp4]/best[height<=${height}]`)
         .output(tempDir)
-        .setOutputTemplate(`${videoId}.mp4`)
+        .setOutputTemplate(path.join(tempDir, `${videoId}.mp4`))
         .run();
 
       return outputPath;
