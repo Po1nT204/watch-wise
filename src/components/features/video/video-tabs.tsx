@@ -58,10 +58,10 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
   };
 
   const processText = (text: string) => {
-    const parts = text.split(/(\[\d{1,2}:\d{2}\]|\[\d+s\])/g);
+    const parts = text.split(/(\[\d{1,3}:\d{1,2}\]|\[\d+s\])/g);
 
     return parts.map((part, i) => {
-      if (part.match(/^\[\d{1,2}:\d{2}\]$|^\[\d+s\]$/)) {
+      if (part.match(/^\[\d{1,3}:\d{1,2}\]$|^\[\d+s\]$/)) {
         const seconds = parseTimestamp(part);
         return (
           <Button
