@@ -60,13 +60,13 @@ export function AnalysisControl({
             Режим
           </Label>
           <Select value={mode} onValueChange={setMode}>
-            <SelectTrigger className='w-full bg-background border shadow-sm'>
+            <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
             <SelectContent
               position='popper'
               sideOffset={4}
-              className='bg-popover z-[100] shadow-md border'
+              className='bg-background shadow-md z-50'
             >
               <SelectItem value='student'>
                 <div className='flex items-center gap-2'>
@@ -88,13 +88,13 @@ export function AnalysisControl({
             Сложность
           </Label>
           <Select value={difficulty} onValueChange={setDifficulty}>
-            <SelectTrigger className='w-full bg-background border shadow-sm'>
+            <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
             <SelectContent
               position='popper'
               sideOffset={4}
-              className='bg-popover z-[100] shadow-md border'
+              className='bg-background shadow-md z-50'
             >
               <SelectItem value='easy'>Легко</SelectItem>
               <SelectItem value='medium'>Средне</SelectItem>
@@ -109,13 +109,13 @@ export function AnalysisControl({
             Вопросов
           </Label>
           <Select value={questionsCount} onValueChange={setQuestionsCount}>
-            <SelectTrigger className='w-full bg-background border shadow-sm'>
+            <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
             <SelectContent
               position='popper'
               sideOffset={4}
-              className='bg-popover z-[100] shadow-md border'
+              className='bg-background shadow-md z-50'
             >
               <SelectItem value='5'>5 вопросов</SelectItem>
               <SelectItem value='10'>10 вопросов</SelectItem>
