@@ -63,7 +63,11 @@ export function AnalysisControl({
             <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              position='popper'
+              sideOffset={4}
+              className='bg-background shadow-md z-50'
+            >
               <SelectItem value='student'>
                 <div className='flex items-center gap-2'>
                   <GraduationCap className='h-4 w-4' /> Студент
@@ -87,7 +91,11 @@ export function AnalysisControl({
             <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              position='popper'
+              sideOffset={4}
+              className='bg-background shadow-md z-50'
+            >
               <SelectItem value='easy'>Легко</SelectItem>
               <SelectItem value='medium'>Средне</SelectItem>
               <SelectItem value='hard'>Сложно</SelectItem>
@@ -104,7 +112,11 @@ export function AnalysisControl({
             <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              position='popper'
+              sideOffset={4}
+              className='bg-background shadow-md z-50'
+            >
               <SelectItem value='5'>5 вопросов</SelectItem>
               <SelectItem value='10'>10 вопросов</SelectItem>
               <SelectItem value='15'>15 вопросов</SelectItem>

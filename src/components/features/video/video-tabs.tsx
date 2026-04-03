@@ -29,16 +29,13 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
   const questions = content?.questions || [];
   const flashcards = content?.flashcards || [];
 
-  // Универсальный парсер: понимает и [12:34], и [164s]
   const parseTimestamp = (ts: string) => {
     const cleanTs = ts.replace(/[\[\]]/g, '');
 
-    // Если формат "164s"
     if (cleanTs.endsWith('s')) {
       return parseInt(cleanTs.replace('s', ''), 10);
     }
 
-    // Если формат "MM:SS"
     const parts = cleanTs.split(':');
     if (parts.length === 2) {
       return parseInt(parts[0]) * 60 + parseInt(parts[1]);
@@ -46,7 +43,6 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
     return 0;
   };
 
-  // Красивое форматирование для UI (переводит секунды в [MM:SS])
   const formatDisplayTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
@@ -62,12 +58,10 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
   };
 
   const processText = (text: string) => {
-    // Регулярка теперь ищет ДВА формата: либо [MM:SS], либо [число+s]
-    const parts = text.split(/(\[\d{1,2}:\d{2}\]|\[\d+s\])/g);
+    const parts = text.split(/(\[\d{1,3}:\d{1,2}\]|\[\d+s\])/g);
 
     return parts.map((part, i) => {
-      // Проверяем, является ли кусок одним из форматов таймкода
-      if (part.match(/^\[\d{1,2}:\d{2}\]$|^\[\d+s\]$/)) {
+      if (part.match(/^\[\d{1,3}:\d{1,2}\]$|^\[\d+s\]$/)) {
         const seconds = parseTimestamp(part);
         return (
           <Button
@@ -136,7 +130,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
       onValueChange={setActiveTab}
       className='w-full h-full flex flex-col'
     >
-      <TabsList className='grid w-full grid-cols-3 h-auto p-1'>
+      <TabsList className='grid w-full grid-cols-3 h-auto p-1 shrink-0'>
         <TabsTrigger
           value='summary'
           className='py-2 px-1 text-[13px] sm:text-sm'
@@ -154,16 +148,22 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
         </TabsTrigger>
       </TabsList>
 
-      <div className='flex-1 mt-4 min-h-0'>
-        <TabsContent value='summary' className='h-full m-0'>
-          <Card className='h-full flex flex-col border-none shadow-none'>
-            <CardHeader className='p-4 pb-2'>
+      {/* Контейнер с min-h-0 позволяет внутреннему скроллу работать правильно */}
+      <div className='flex-1 mt-4 min-h-0 flex flex-col'>
+        {/* Обрати внимание на data-[state=active]:flex flex-col — это делает вкладку flex-контейнером, когда она открыта */}
+        <TabsContent
+          value='summary'
+          className='h-full m-0 data-[state=active]:flex flex-col data-[state=inactive]:hidden'
+        >
+          <Card className='flex-1 flex flex-col border-none shadow-none min-h-0'>
+            <CardHeader className='p-4 pb-2 shrink-0'>
               <CardTitle className='text-lg'>Краткое содержание</CardTitle>
               <CardDescription className='text-xs'>
                 Сгенерировано YandexGPT
               </CardDescription>
             </CardHeader>
-            <ScrollArea className='flex-1 px-4 h-[450px]'>
+            {/* flex-1 и min-h-0 забирают оставшееся место под скролл */}
+            <ScrollArea className='flex-1 px-4 min-h-0'>
               <div className='text-sm space-y-4 pb-4'>
                 {content?.summary ? (
                   <div className='prose prose-sm dark:prose-invert max-w-none text-foreground leading-relaxed'>
@@ -217,48 +217,59 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
           </Card>
         </TabsContent>
 
-        <TabsContent value='quiz' className='h-full m-0'>
-          <ScrollArea className='h-[450px] p-4'>
-            <div className='space-y-4 pb-4'>
-              {questions.length > 0 ? (
-                questions.map((q: any, idx: number) => (
-                  <Card key={q.id} className='p-4 border-muted shadow-none'>
-                    <p className='text-sm font-semibold leading-tight'>
-                      {idx + 1}. {q.text}
+        <TabsContent
+          value='quiz'
+          className='h-full m-0 data-[state=active]:flex flex-col data-[state=inactive]:hidden'
+        >
+          <Card className='flex-1 flex flex-col border-none shadow-none min-h-0'>
+            <ScrollArea className='flex-1 p-4 min-h-0'>
+              <div className='space-y-4 pb-4'>
+                {questions.length > 0 ? (
+                  questions.map((q: any, idx: number) => (
+                    <Card
+                      key={q.id}
+                      className='p-4 border-muted shadow-none shrink-0'
+                    >
+                      <p className='text-sm font-semibold leading-tight'>
+                        {idx + 1}. {q.text}
+                      </p>
+                      <div className='mt-3 grid gap-2'>
+                        {q.options.map((opt: string, i: number) => (
+                          <div
+                            key={i}
+                            className='text-[12px] p-2 rounded border bg-muted/30 text-muted-foreground'
+                          >
+                            {opt}
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <div className='flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground border border-dashed rounded-md text-center p-6'>
+                    <GraduationCap className='h-8 w-8 mb-2 opacity-20' />
+                    <p className='text-sm'>
+                      Тестирование станет доступно после анализа
                     </p>
-                    <div className='mt-3 grid gap-2'>
-                      {q.options.map((opt: string, i: number) => (
-                        <div
-                          key={i}
-                          className='text-[12px] p-2 rounded border bg-muted/30 text-muted-foreground'
-                        >
-                          {opt}
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                ))
-              ) : (
-                <div className='flex flex-col items-center justify-center h-[300px] text-muted-foreground border border-dashed rounded-md text-center p-6'>
-                  <GraduationCap className='h-8 w-8 mb-2 opacity-20' />
-                  <p className='text-sm'>
-                    Тестирование станет доступно после анализа
-                  </p>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </Card>
         </TabsContent>
 
-        <TabsContent value='cards' className='h-full m-0'>
-          <Card className='h-full flex flex-col border-none shadow-none'>
-            <CardHeader className='p-4 pb-2'>
+        <TabsContent
+          value='cards'
+          className='h-full m-0 data-[state=active]:flex flex-col data-[state=inactive]:hidden'
+        >
+          <Card className='flex-1 flex flex-col border-none shadow-none min-h-0'>
+            <CardHeader className='p-4 pb-2 shrink-0'>
               <CardTitle className='text-lg'>Флеш-карточки</CardTitle>
               <CardDescription className='text-xs'>
                 Основные термины для запоминания
               </CardDescription>
             </CardHeader>
-            <ScrollArea className='flex-1 px-4 h-[450px]'>
+            <ScrollArea className='flex-1 px-4 min-h-0'>
               {flashcards.length > 0 ? (
                 <div className='pb-6'>
                   <Flashcards
@@ -267,7 +278,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
                   />
                 </div>
               ) : (
-                <div className='flex flex-col items-center justify-center h-[300px] text-muted-foreground border border-dashed rounded-md text-center p-6'>
+                <div className='flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground border border-dashed rounded-md text-center p-6'>
                   <LibraryBig className='h-8 w-8 mb-2 opacity-20' />
                   <p className='text-sm'>
                     Карточки появятся после анализа видео
