@@ -3,7 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Library, Settings, Video } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Library,
+  Settings,
+  Video,
+  LibraryBig,
+} from 'lucide-react';
 
 const routes = [
   {
@@ -15,6 +21,11 @@ const routes = [
     label: 'Мои видео',
     icon: Library,
     href: '/dashboard/videos',
+  },
+  {
+    label: 'База знаний',
+    icon: LibraryBig,
+    href: '/dashboard/flashcards',
   },
   {
     label: 'Настройки',
@@ -58,9 +69,6 @@ export const Sidebar = () => {
           })}
         </nav>
       </div>
-
-      {/* Нижняя часть сайдбара (можно добавить инфо о лимитах или версию) */}
-      <div className='mt-auto p-4'>{/* Заглушка, если понадобится */}</div>
     </div>
   );
 };
