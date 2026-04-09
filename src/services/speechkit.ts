@@ -127,6 +127,10 @@ export class SpeechKitService {
     let results: any[] = [];
 
     try {
+      logger.info(
+        { responseLength: rawResponse.length },
+        'Starting PARSE AUDIO from speechkit',
+      );
       if (typeof rawResponse === 'string') {
         const normalizedResponse = rawResponse.replace(/\}\s*\{/g, '}|||{');
         const jsonStrings = normalizedResponse.split('|||');
@@ -160,10 +164,28 @@ export class SpeechKitService {
           }
         }
       });
-    } catch (e) {
-      console.error('[SpeechKit] Parse Error:', e);
+
+      logger.info(
+        {
+          responseLength: rawResponse.length,
+          finalResultLength: results.length,
+        },
+        'PARSE AUDIO from speechkit completed',
+      );
+    } catch (error) {
+      logger.error(
+        { err: error, responseLength: rawResponse.length },
+        'PARSE AUDIO from speechkit failed',
+      );
       if (typeof rawResponse === 'string') {
-        console.error('Raw string fragment:', rawResponse.substring(0, 100));
+        logger.error(
+          {
+            err: error,
+            responseLength: rawResponse.length,
+            responseFragment: rawResponse.substring(0, 100),
+          },
+          'PARSE AUDIO from speechkit failed and was string',
+        );
       }
     }
 

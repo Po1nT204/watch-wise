@@ -1,3 +1,4 @@
+import { logger } from '@/config/logger';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import fs from 'fs';
 
@@ -25,6 +26,10 @@ export class S3Service {
     const client = this.getClient(); // Создаем клиент здесь
 
     try {
+      logger.info(
+        { videoId, filePath },
+        'Starting UPLOAD AUDIO to S3 yandex cloud',
+      );
       await client.send(
         new PutObjectCommand({
           Bucket: bucketName,
@@ -34,9 +39,16 @@ export class S3Service {
         }),
       );
 
+      logger.info(
+        { videoId, filePath },
+        'UPLOAD AUDIO to S3 yandex cloud completed',
+      );
       return `https://storage.yandexcloud.net/${bucketName}/${key}`;
     } catch (error) {
-      console.error('[S3Service] Upload failed:', error);
+      logger.error(
+        { err: error, videoId },
+        'UPLOAD AUDIO to S3 yandex cloud failed',
+      );
       throw new Error('Ошибка при загрузке аудио в облако');
     }
   }
@@ -50,6 +62,10 @@ export class S3Service {
     const client = this.getClient();
 
     try {
+      logger.info(
+        { videoId, filePath },
+        'Starting UPLOAD VIDEO to S3 yandex cloud',
+      );
       await client.send(
         new PutObjectCommand({
           Bucket: bucketName,
@@ -58,9 +74,17 @@ export class S3Service {
           ContentType: 'video/mp4',
         }),
       );
+
+      logger.info(
+        { videoId, filePath },
+        'UPLOAD VIDEO to S3 yandex cloud completed',
+      );
       return `https://storage.yandexcloud.net/${bucketName}/${key}`;
     } catch (error) {
-      console.error('[S3Service] Video Upload failed:', error);
+      logger.error(
+        { err: error, videoId },
+        'UPLOAD VIDEO to S3 yandex cloud failed',
+      );
       throw new Error('Ошибка при загрузке видео в облако');
     }
   }

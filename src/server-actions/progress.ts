@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@/config/auth';
+import { logger } from '@/config/logger';
 import prisma from '@/config/prisma';
 import { revalidatePath } from 'next/cache';
 
@@ -14,6 +15,7 @@ export const saveQuizResult = async (
   if (!session?.user?.id) return { error: 'Не авторизован' };
 
   try {
+    logger.info({ userId: session.user.id }, 'Starting SAVE QUIZ RESULT to DB');
     await prisma.$transaction([
       prisma.testResult.create({
         data: {
@@ -40,9 +42,16 @@ export const saveQuizResult = async (
     revalidatePath('/dashboard');
     revalidatePath(`/dashboard/video/${videoId}`);
 
+    logger.info(
+      { userId: session.user.id, success: true },
+      'SAVE QUIZ RESULT to DB completed',
+    );
     return { success: true };
   } catch (error) {
-    console.error('Save Quiz Result Error:', error);
+    logger.error(
+      { err: error, userId: session.user.id, success: false },
+      'SAVE QUIZ RESULT to DB failed',
+    );
     return { error: 'Ошибка сохранения результата' };
   }
 };

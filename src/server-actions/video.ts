@@ -11,6 +11,7 @@ import { YoutubeService } from '@/services/youtube';
 import { S3Service } from '@/services/s3';
 import { SpeechKitService } from '@/services/speechkit';
 import { VideoDownloader } from '@/services/video-downloader';
+import { logger } from '@/config/logger';
 
 interface AnalysisSettings {
   mode: string; // в будущем enum и импорт из файла types
@@ -38,6 +39,7 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
     return { error: 'Не удалось определить ID видео или платформу' };
 
   try {
+    logger.info({ videoData }, 'Starting ADD VIDEO to DB');
     let videoTitle = `${videoData.platform.toUpperCase()} Video ${videoData.id}`;
     let thumbnail = '';
 
@@ -85,10 +87,10 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
 
     // 3. Обновляем кэш страницы дашборда, чтобы список обновился мгновенно
     revalidatePath('/dashboard');
-
+    logger.info({ videoData, success: true }, 'ADD VIDEO to DB completed');
     return { success: 'Видео добавлено!', videoId: video.id };
   } catch (error) {
-    console.error('Add video error:', error);
+    logger.error({ err: error, videoData }, 'ADD VIDEO to DB failed');
     return { error: 'Ошибка при добавлении видео' };
   }
 };
@@ -101,6 +103,7 @@ export const startAnalysis = async (
   if (!session?.user?.id) return { error: 'Не авторизован' };
 
   try {
+    logger.info({ videoId, settings }, 'Starting ANALYSIS VIDEO');
     await prisma.video.update({
       where: { id: videoId },
       data: { status: 'PROCESSING' },
@@ -135,8 +138,9 @@ export const startAnalysis = async (
             video.id,
           );
         } catch (e) {
-          console.warn(
-            `[YouTube] Нет субтитров для ${video.id}. Включаем резервный пайплайн (аудио -> SpeechKit)...`,
+          logger.warn(
+            { videoId: video.id, err: e },
+            'YouTube transcript fetch failed. Falling back to audio extraction -> SpeechKit pipeline',
           );
           needsAudioExtraction = true; // Фоллбэк активирован
         }
@@ -198,7 +202,10 @@ export const startAnalysis = async (
             .map((c) => `[${Math.floor(c.startTime)}s] ${c.text}`)
             .join(' ');
         } catch (e) {
-          console.error('Audio Extraction / SpeechKit Pipeline Error:', e);
+          logger.error(
+            { err: e, videoId: video.id },
+            'Audio Extraction / SpeechKit Pipeline Error',
+          );
           throw new Error(
             'Не удалось получить транскрипт (ни через субтитры, ни через аудио-распознавание) или загрузить видео',
           );
@@ -258,9 +265,10 @@ export const startAnalysis = async (
     });
 
     revalidatePath(`/dashboard/video/${videoId}`);
+    logger.info({ videoId, success: true }, 'Analysis completed');
     return { success: true };
   } catch (error) {
-    console.error('Analysis Error:', error);
+    logger.error({ err: error, videoId }, 'Analysis Global Error');
     await prisma.video.update({
       where: { id: videoId },
       data: { status: 'FAILED' },
@@ -276,13 +284,18 @@ export const deleteVideo = async (videoId: string) => {
   if (!session?.user?.id) return { error: 'Не авторизован' };
 
   try {
+    logger.info({ videoId }, 'Starting DELETE VIDEO from DB');
     const { deleteVideoFromUser } = await import('@/services/video');
     await deleteVideoFromUser(videoId, session.user.id);
 
     revalidatePath('/dashboard');
+    logger.info({ videoId, success: true }, 'DELETE VIDEO from DB completed');
     return { success: 'Видео удалено из вашей библиотеки' };
   } catch (error) {
-    console.error(error);
+    logger.error(
+      { err: error, videoId, success: false },
+      'DELETE VIDEO from DB failed',
+    );
     return { error: 'Не удалось удалить видео' };
   }
 };
