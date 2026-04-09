@@ -1,3 +1,4 @@
+import { logger } from '@/config/logger';
 import axios from 'axios';
 
 export interface SpeechKitResponse {
@@ -49,6 +50,7 @@ export class SpeechKitService {
     const folderId = this.getFolderId();
 
     try {
+      logger.info({ fileUri }, 'Starting CREATE TASK to S3 yandex cloud');
       const response = await axios.post(
         'https://stt.api.cloud.yandex.net/stt/v3/recognizeFileAsync',
         {
@@ -74,12 +76,13 @@ export class SpeechKitService {
         },
       );
 
-      return response.data.id;
-    } catch (error: any) {
-      console.error(
-        '[SpeechKit] createTask error details:',
-        error.response?.data || error.message,
+      logger.info(
+        { fileUri, taskId: response.data.id },
+        'CREATE TASK to S3 yandex cloud completed',
       );
+      return response.data.id;
+    } catch (error) {
+      logger.error({ err: error }, 'CREATE TASK to S3 yandex cloud failed');
       throw error;
     }
   }

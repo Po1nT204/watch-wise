@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { AIGeneratedContentSchema } from '@/shared/schemas';
+import { logger } from '@/config/logger';
 
 export class YandexCloudService {
   private static apiKey = process.env.YANDEX_API_KEY;
@@ -53,6 +54,10 @@ export class YandexCloudService {
 }`;
 
     try {
+      logger.info(
+        { settings, transcriptLength: transcript.length },
+        'Requesting YandexGPT for learning content',
+      );
       const response = await this.openai.chat.completions.create({
         // Путь к модели в AI Studio
         model: `gpt://${this.folderId}/yandexgpt/latest`,
@@ -70,11 +75,14 @@ export class YandexCloudService {
       });
 
       const content = response.choices[0].message.content || '';
-      console.log('AI Response:', content);
+      logger.debug(
+        { responseContent: content.substring(0, 100) },
+        'Received response from YandexGPT',
+      );
 
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        console.error('ИИ прислал не JSON:', content);
+        logger.error({ content }, 'YandexGPT returned non-JSON format');
         throw new Error('Ответ нейросети не содержит структурированных данных');
       }
 
@@ -82,10 +90,11 @@ export class YandexCloudService {
       const parsedJson = JSON.parse(cleanJson);
       const validatedData = AIGeneratedContentSchema.parse(parsedJson);
 
+      logger.info('Learning content successfully generated and validated');
       return validatedData;
     } catch (error) {
-      console.error('Yandex AI Studio Error:', error);
-      throw error;
+      logger.error({ err: error }, 'Yandex AI Studio Error');
+      throw new Error('Не удалось получить обучающий контент от YandexGPT');
     }
   }
 }

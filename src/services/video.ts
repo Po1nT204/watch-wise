@@ -1,9 +1,10 @@
-import prisma from '@/config/prisma'; // Используем твой конфиг
+import { logger } from '@/config/logger';
+import prisma from '@/config/prisma';
 
 export const getVideosByUserId = async (userId: string) => {
   try {
+    logger.info({ userId }, "Starting fetch USER'S VIDEOS from DB");
     // Ищем видео, которые связаны с пользователем через GeneratedContent
-    // То есть: "Дай мне видео, у которых есть хотя бы одна генерация, принадлежащая этому юзеру"
     const videos = await prisma.video.findMany({
       where: {
         OR: [
@@ -39,15 +40,20 @@ export const getVideosByUserId = async (userId: string) => {
       },
     });
 
+    logger.info(
+      { userId, videosLength: videos.length },
+      "Fetch USER'S VIDEOS from DB completed",
+    );
     return videos;
   } catch (error) {
-    console.error('Ошибка при получении видео:', error);
-    return [];
+    logger.error({ err: error, userId }, "Fetch USER'S VIDEOS from DB failed");
+    throw error;
   }
 };
 
 export const getVideoById = async (videoId: string, userId: string) => {
   try {
+    logger.info({ videoId, userId }, 'Starting fetch VIDEO from DB');
     const video = await prisma.video.findFirst({
       where: {
         id: videoId,
@@ -80,15 +86,17 @@ export const getVideoById = async (videoId: string, userId: string) => {
       },
     });
 
+    logger.info({ videoId, userId, video }, 'Fetch VIDEO from DB completed');
     return video;
   } catch (error) {
-    console.error('Ошибка при получении видео:', error);
-    return null;
+    logger.error({ err: error, videoId, userId }, 'Fetch VIDEO from DB failed');
+    throw error;
   }
 };
 
 export const deleteVideoFromUser = async (videoId: string, userId: string) => {
   try {
+    logger.info({ videoId, userId }, 'Starting DELETE VIDEO from DB');
     return await prisma.$transaction(async (tx) => {
       // 1. Удаляем прогресс
       await tx.videoProgress.deleteMany({
@@ -100,10 +108,17 @@ export const deleteVideoFromUser = async (videoId: string, userId: string) => {
         where: { videoId, userId },
       });
 
+      logger.info(
+        { videoId, userId, success: true },
+        'DELETE VIDEO from DB completed',
+      );
       return { success: true };
     });
   } catch (error) {
-    console.error('Delete Service Error:', error);
+    logger.error(
+      { err: error, videoId, userId },
+      'DELETE VIDEO from DB failed',
+    );
     throw new Error('Ошибка при удалении данных видео');
   }
 };

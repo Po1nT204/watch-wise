@@ -1,5 +1,6 @@
 import { YoutubeTranscript } from 'youtube-transcript';
 import prisma from '@/config/prisma';
+import { logger } from '@/config/logger';
 
 export class YoutubeService {
   /**
@@ -8,6 +9,7 @@ export class YoutubeService {
    */
   static async fetchAndSaveTranscript(videoUrl: string, videoId: string) {
     try {
+      logger.info({ videoId, videoUrl }, 'Starting fetch YOUTUBE TRANSCRIPT');
       const transcriptItems = await YoutubeTranscript.fetchTranscript(
         videoUrl,
         {
@@ -34,10 +36,17 @@ export class YoutubeService {
         .map((item) => `[${Math.floor(item.offset / 1000)}s] ${item.text}`)
         .join(' ');
 
+      logger.info(
+        { videoId, transcriptLength: fullTextWithTimestamps.length },
+        'Fetch YOUTUBE TRANSCRIPT completed',
+      );
       return fullTextWithTimestamps;
     } catch (error) {
-      console.error(`[YoutubeService] Error for ${videoId}:`, error);
-      throw error;
+      logger.error(
+        { err: error, videoId, videoUrl },
+        'Fetch YOUTUBE TRANSCRIPT failed',
+      );
+      throw new Error('Не удалось получить субтитры для видео с youtube');
     }
   }
 }
