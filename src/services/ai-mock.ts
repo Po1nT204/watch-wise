@@ -1,3 +1,4 @@
+import { logger } from '@/config/logger';
 import prisma from '@/config/prisma';
 
 interface AnalysisSettings {
@@ -21,6 +22,7 @@ export async function simulateVideoAnalysis(
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
   try {
+    logger.info({ videoId, userId, settings }, 'Starting AI MOCK service');
     // 2. Создаем транскрипт (если его еще нет)
     // Проверяем, есть ли уже чанки, чтобы не дублировать при повторном анализе
     const existingChunks = await prisma.transcriptChunk.count({
@@ -87,9 +89,13 @@ export async function simulateVideoAnalysis(
       data: { status: 'COMPLETED' },
     });
 
+    logger.info({ videoId, userId, settings }, 'AI MOCK service completed');
     return { success: true };
   } catch (error) {
-    console.error('Mock Analysis Error:', error);
+    logger.error(
+      { err: error, videoId, userId, settings },
+      'AI MOCK service failed',
+    );
     await prisma.video.update({
       where: { id: videoId },
       data: { status: 'FAILED' },

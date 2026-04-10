@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@/config/auth';
+import { logger } from '@/config/logger';
 import prisma from '@/config/prisma';
 import { SettingsSchema } from '@/shared/schemas';
 import { revalidatePath } from 'next/cache';
@@ -13,6 +14,7 @@ export const updateUserSettings = async (
   if (!session?.user?.id) return { error: 'Не авторизован' };
 
   try {
+    logger.info({ userId: session.user.id }, 'Starting UPDATE SETTINGS');
     await prisma.user.update({
       where: { id: session.user.id },
       data: {
@@ -25,9 +27,16 @@ export const updateUserSettings = async (
     });
 
     revalidatePath('/dashboard/settings');
+    logger.info(
+      { userId: session.user.id, success: true },
+      'UPDATE USER SETTINGS completed',
+    );
     return { success: 'Профиль обновлен!' };
   } catch (error) {
-    console.error(error);
+    logger.error(
+      { err: error, userId: session.user.id, success: false },
+      'UPDATE USER SETTINGS failed',
+    );
     return { error: 'Ошибка при сохранении' };
   }
 };

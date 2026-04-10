@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
 import { AIGeneratedContentSchema } from '@/shared/schemas';
+import { logger } from '@/config/logger';
+import pRetry from 'p-retry';
 
 export class YandexCloudService {
   private static apiKey = process.env.YANDEX_API_KEY;
@@ -8,7 +10,6 @@ export class YandexCloudService {
   private static openai = new OpenAI({
     apiKey: this.apiKey,
     baseURL: 'https://ai.api.cloud.yandex.net/v1',
-    // В Yandex AI Studio FOLDER_ID передается как 'project'
     project: this.folderId,
   });
 
@@ -52,40 +53,79 @@ export class YandexCloudService {
   ]
 }`;
 
-    try {
-      const response = await this.openai.chat.completions.create({
-        // Путь к модели в AI Studio
-        model: `gpt://${this.folderId}/yandexgpt/latest`,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `Вот транскрипт с таймкодами: ${transcript}. 
+    // Обертка для выполнения запроса с возможностью повтора
+    const runInference = async () => {
+      logger.info(
+        { settings, transcriptLength: transcript.length },
+        'Requesting YandexGPT for learning content',
+      );
+
+      // Таймаут на уровне запроса: 45 секунд (Node.js 16.14+)
+      const signal = AbortSignal.timeout(45000);
+
+      const response = await this.openai.chat.completions.create(
+        {
+          model: `gpt://${this.folderId}/yandexgpt/latest`,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            {
+              role: 'user',
+              content: `Вот транскрипт с таймкодами: ${transcript}. 
     Сложность: ${settings.difficulty}. 
     Количество вопросов: ${settings.count}. 
     Расставь вопросы равномерно по видео, используя реальные метки времени из текста, избегая начальный и конечный края видео.`,
-          },
-        ],
-        temperature: 0.3,
-      });
+            },
+          ],
+          temperature: 0.3,
+        },
+        { signal }, // Передаем сигнал таймаута
+      );
 
       const content = response.choices[0].message.content || '';
-      console.log('AI Response:', content);
+      logger.debug(
+        { responseContent: content.substring(0, 100) },
+        'Received response from YandexGPT',
+      );
 
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        console.error('ИИ прислал не JSON:', content);
-        throw new Error('Ответ нейросети не содержит структурированных данных');
+        logger.error({ content }, 'YandexGPT returned non-JSON format');
+        // Выбрасываем ошибку, чтобы p-retry попытался снова!
+        throw new Error(
+          'Ответ нейросети не содержит структурированных данных (JSON)',
+        );
       }
 
       const cleanJson = jsonMatch[0];
       const parsedJson = JSON.parse(cleanJson);
       const validatedData = AIGeneratedContentSchema.parse(parsedJson);
 
+      logger.info('Learning content successfully generated and validated');
       return validatedData;
+    };
+
+    try {
+      // Исполняем с паттерном Exponential Backoff (до 3 попыток)
+      return await pRetry(runInference, {
+        retries: 2, // 1 первоначальная + 2 повторных = 3 попытки
+        minTimeout: 2000, // Минимальная задержка 2 сек
+        maxTimeout: 10000, // Максимальная задержка 10 сек
+        onFailedAttempt: (error) => {
+          logger.warn(
+            {
+              attemptNumber: error.attemptNumber,
+              retriesLeft: error.retriesLeft,
+              message: error instanceof Error ? error.message : String(error),
+            },
+            'YandexGPT request failed, retrying...',
+          );
+        },
+      });
     } catch (error) {
-      console.error('Yandex AI Studio Error:', error);
-      throw error;
+      logger.error({ err: error }, 'Yandex AI Studio Error after all retries');
+      throw new Error(
+        'Не удалось получить обучающий контент от YandexGPT после нескольких попыток',
+      );
     }
   }
 }

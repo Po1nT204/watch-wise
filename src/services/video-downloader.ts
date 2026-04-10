@@ -1,6 +1,7 @@
 import { YtDlp } from 'ytdlp-nodejs';
 import path from 'path';
 import fs from 'fs';
+import { logger } from '@/config/logger';
 
 export class VideoDownloader {
   private static ytdlp = new YtDlp();
@@ -13,7 +14,7 @@ export class VideoDownloader {
     const outputPath = path.join(tempDir, `${videoId}.mp3`);
 
     try {
-      console.log(`[Downloader] Starting extraction for: ${url}`);
+      logger.info({ videoId, url }, 'Starting AUDIO extraction');
 
       await this.ytdlp
         .download(url)
@@ -24,9 +25,10 @@ export class VideoDownloader {
         .setOutputTemplate(path.join(tempDir, `${videoId}.%(ext)s`))
         .run();
 
+      logger.info({ videoId, outputPath }, 'AUDIO extraction completed');
       return outputPath;
     } catch (error) {
-      console.error('[Downloader] Extraction failed:', error);
+      logger.error({ err: error, videoId, url }, 'Audio Extraction failed');
       throw new Error('Не удалось извлечь аудио из видео');
     }
   }
@@ -42,9 +44,8 @@ export class VideoDownloader {
     const outputPath = path.join(tempDir, `${videoId}.mp4`);
 
     try {
-      console.log(
-        `[Downloader] Starting VIDEO extraction for: ${url} at ${height}p`,
-      );
+      logger.info({ videoId, url, height }, 'Starting VIDEO extraction');
+
       await new YtDlp()
         .download(url)
         // Ищем лучшее качество, но не выше заданного height
@@ -53,9 +54,13 @@ export class VideoDownloader {
         .setOutputTemplate(path.join(tempDir, `${videoId}.mp4`))
         .run();
 
+      logger.info({ videoId, outputPath }, 'VIDEO extraction completed');
       return outputPath;
     } catch (error) {
-      console.error('[Downloader] Video Extraction failed:', error);
+      logger.error(
+        { err: error, videoId, url, height },
+        'Video Extraction failed',
+      );
       throw new Error('Не удалось скачать видео');
     }
   }
