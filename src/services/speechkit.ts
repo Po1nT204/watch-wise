@@ -1,5 +1,6 @@
 import { logger } from '@/config/logger';
 import axios from 'axios';
+import pRetry from 'p-retry';
 
 export interface SpeechKitResponse {
   done: boolean;
@@ -43,6 +44,35 @@ export class SpeechKitService {
   }
 
   /**
+   * Общая обертка для HTTP-вызовов к Yandex API с Retry и Timeout
+   */
+  private static async fetchWithRetry(
+    requestFn: (signal: AbortSignal) => Promise<any>,
+  ) {
+    return pRetry(
+      async () => {
+        // Устанавливаем жесткий таймаут 15 секунд на каждый HTTP-запрос
+        const signal = AbortSignal.timeout(15000);
+        return await requestFn(signal);
+      },
+      {
+        retries: 3,
+        minTimeout: 1000,
+        factor: 2, // Экспоненциальное увеличение задержки
+        onFailedAttempt: (error) => {
+          logger.warn(
+            {
+              attemptNumber: error.attemptNumber,
+              retriesLeft: error.retriesLeft,
+            },
+            'SpeechKit API call failed, retrying...',
+          );
+        },
+      },
+    );
+  }
+
+  /**
    * Отправляет файл из S3 на асинхронное распознавание
    */
   static async createTask(fileUri: string): Promise<string> {
@@ -51,38 +81,43 @@ export class SpeechKitService {
 
     try {
       logger.info({ fileUri }, 'Starting CREATE TASK to S3 yandex cloud');
-      const response = await axios.post(
-        'https://stt.api.cloud.yandex.net/stt/v3/recognizeFileAsync',
-        {
-          uri: fileUri,
-          recognition_model: {
-            model: 'general',
-            audio_format: {
-              container_audio: {
-                container_audio_type: 'MP3',
+
+      const response = await this.fetchWithRetry((signal) =>
+        axios.post(
+          'https://stt.api.cloud.yandex.net/stt/v3/recognizeFileAsync',
+          {
+            uri: fileUri,
+            recognition_model: {
+              model: 'general',
+              audio_format: {
+                container_audio: { container_audio_type: 'MP3' },
+              },
+              text_normalization: {
+                text_normalization: 'TEXT_NORMALIZATION_ENABLED',
+                profanity_filter: false,
               },
             },
-            text_normalization: {
-              text_normalization: 'TEXT_NORMALIZATION_ENABLED',
-              profanity_filter: false,
+          },
+          {
+            headers: {
+              Authorization: `Api-Key ${apiKey}`,
+              'x-folder-id': folderId,
             },
+            signal, // Передаем AbortSignal в axios
           },
-        },
-        {
-          headers: {
-            Authorization: `Api-Key ${apiKey}`,
-            'x-folder-id': folderId,
-          },
-        },
+        ),
       );
 
       logger.info(
         { fileUri, taskId: response.data.id },
-        'CREATE TASK to S3 yandex cloud completed',
+        'CREATE TASK completed',
       );
       return response.data.id;
     } catch (error) {
-      logger.error({ err: error }, 'CREATE TASK to S3 yandex cloud failed');
+      logger.error(
+        { err: error },
+        'CREATE TASK to S3 yandex cloud failed fatally',
+      );
       throw error;
     }
   }
@@ -92,6 +127,8 @@ export class SpeechKitService {
    */
   static async getTaskStatus(taskId: string): Promise<SpeechKitResponse> {
     const apiKey = this.getApiKey();
+
+    // Оставляем только таймаут, чтобы не подвис запрос
     const response = await axios.get(
       `https://operation.api.cloud.yandex.net/operations/${taskId}`,
       {
@@ -99,6 +136,7 @@ export class SpeechKitService {
           Authorization: `Api-Key ${apiKey}`,
           'x-folder-id': this.getFolderId(),
         },
+        signal: AbortSignal.timeout(5000),
       },
     );
 
@@ -110,14 +148,17 @@ export class SpeechKitService {
    */
   static async getRecognitionResult(taskId: string) {
     const apiKey = this.getApiKey();
-    const response = await axios.get(
-      `https://stt.api.cloud.yandex.net/stt/v3/getRecognition?operation_id=${taskId}`,
-      {
-        headers: {
-          Authorization: `Api-Key ${apiKey}`,
+
+    const response = await this.fetchWithRetry((signal) =>
+      axios.get(
+        `https://stt.api.cloud.yandex.net/stt/v3/getRecognition?operation_id=${taskId}`,
+        {
+          headers: { Authorization: `Api-Key ${apiKey}` },
+          signal,
         },
-      },
+      ),
     );
+
     return response.data;
   }
 
