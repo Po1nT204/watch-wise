@@ -13,6 +13,7 @@ export const logger = pino({
         colorize: true,
         translateTime: 'SYS:standard', // Понятный формат времени
         ignore: 'pid,hostname', // Убираем лишний мусор из консоли
+        sync: true, // Заставляет работать в основном потоке Next.js
       },
     },
   }),
