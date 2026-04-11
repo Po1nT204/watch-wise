@@ -35,6 +35,9 @@ export const getVideosByUserId = async (userId: string) => {
           where: {
             userId: userId,
           },
+          include: {
+            tags: true,
+          },
           take: 1,
         },
       },

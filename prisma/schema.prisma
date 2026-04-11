@@ -49,6 +49,8 @@ model User {
   links         Json?     // Храним массив ссылок или объект { github: "", website: "" }
   location      String? 
 
+  tags          Tag[]
+
   accounts      Account[]
   sessions      Session[]
   
@@ -110,7 +112,24 @@ model VideoProgress {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
+  tags        Tag[]
+
   @@unique([userId, videoId])
+}
+
+// --- Теги пользователя ---
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  color     String?  // Опционально: цвет тега (например, HEX '#ff0000')
+  userId    String
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Неявная связь многие-ко-многим с прогрессом (конкретным видео юзера)
+  videoProgresses VideoProgress[]
+
+  @@unique([userId, name]) // У одного юзера не может быть двух тегов с одинаковым именем
 }
 
 // --- Сгенерированный Контент ---
