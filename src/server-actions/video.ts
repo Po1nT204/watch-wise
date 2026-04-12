@@ -39,7 +39,7 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
     return { error: 'Не удалось определить ID видео или платформу' };
 
   try {
-    logger.info({ videoData }, 'Starting ADD VIDEO to DB');
+    logger.info({ videoId: videoData.id }, 'Starting ADD VIDEO to DB');
     let videoTitle = `${videoData.platform.toUpperCase()} Video ${videoData.id}`;
     let thumbnail = '';
 
@@ -87,10 +87,16 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
 
     // 3. Обновляем кэш страницы дашборда, чтобы список обновился мгновенно
     revalidatePath('/dashboard');
-    logger.info({ videoData, success: true }, 'ADD VIDEO to DB completed');
+    logger.info(
+      { videoId: videoData.id, success: true },
+      'ADD VIDEO to DB completed',
+    );
     return { success: 'Видео добавлено!', videoId: video.id };
   } catch (error) {
-    logger.error({ err: error, videoData }, 'ADD VIDEO to DB failed');
+    logger.error(
+      { err: error, videoId: videoData.id },
+      'ADD VIDEO to DB failed',
+    );
     return { error: 'Ошибка при добавлении видео' };
   }
 };

@@ -89,7 +89,10 @@ export const getVideoById = async (videoId: string, userId: string) => {
       },
     });
 
-    logger.info({ videoId, userId, video }, 'Fetch VIDEO from DB completed');
+    logger.info(
+      { videoId, userId, videoTitle: video?.title },
+      'Fetch VIDEO from DB completed',
+    );
     return video;
   } catch (error) {
     logger.error({ err: error, videoId, userId }, 'Fetch VIDEO from DB failed');

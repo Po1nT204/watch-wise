@@ -90,7 +90,7 @@ export function VideoTagsDialog({
           {/* Форма создания нового тега */}
           <form onSubmit={handleCreate} className='flex items-center gap-2'>
             <Input
-              placeholder="Новый тег (напр. 'Физика')"
+              placeholder="Новый тег (напр. 'Физика'). Некоторые теги появятся автоматически после анализа видео ИИ"
               value={newTagName}
               onChange={(e) => setNewTagName(e.target.value)}
               disabled={isPending}

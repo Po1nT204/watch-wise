@@ -91,7 +91,10 @@ export class YandexCloudService {
 
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        logger.error({ content }, 'YandexGPT returned non-JSON format');
+        logger.error(
+          { contentFragment: content.substring(0, 100) },
+          'YandexGPT returned non-JSON format',
+        );
         // Выбрасываем ошибку, чтобы p-retry попытался снова!
         throw new Error(
           'Ответ нейросети не содержит структурированных данных (JSON)',
