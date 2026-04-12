@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, GraduationCap, LibraryBig } from 'lucide-react';
+import { FileText, GraduationCap, LibraryBig, Download } from 'lucide-react';
 import { Flashcards } from './flashcards';
 import Markdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
@@ -50,11 +50,65 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
   };
 
   const handleTermClick = (matchedTerm: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const index = flashcards.findIndex((f: any) => f.term === matchedTerm);
     if (index !== -1) {
       setActiveCardIndex(index);
     }
     setActiveTab('cards');
+  };
+
+  // --- ЭКСПОРТ В MARKDOWN ---
+  const handleExportMD = () => {
+    if (!content) return;
+
+    let md = `# ${video.title || 'Учебный материал'}\n\n`;
+    md += `*Сгенерировано платформой WatchWise | ${new Date().toLocaleDateString('ru-RU')}*\n\n---\n\n`;
+
+    md += `## 1. Конспект\n\n${content.summary}\n\n`;
+
+    if (flashcards.length > 0) {
+      md += `## 2. Глоссарий (Термины)\n\n`;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      flashcards.forEach((f: any) => {
+        md += `- **${f.term}**: ${f.definition}\n`;
+      });
+      md += `\n`;
+    }
+
+    if (questions.length > 0) {
+      md += `## 3. Проверочный тест\n\n`;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      questions.forEach((q: any, i: number) => {
+        md += `### Вопрос ${i + 1}. ${q.text}\n`;
+        q.options.forEach((opt: string, optIdx: number) => {
+          const isCorrect = optIdx === q.correctIdx;
+          const mark = isCorrect ? '[x]' : '[ ]';
+          md += `- ${mark} ${opt}\n`;
+        });
+        if (q.explanation) {
+          md += `\n> **Пояснение:** ${q.explanation}\n`;
+        }
+        md += `\n`;
+      });
+    }
+
+    // Создаем Blob (виртуальный файл в памяти браузера)
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    // Программный клик для скачивания
+    const a = document.createElement('a');
+    a.href = url;
+    // Чистим имя файла от спецсимволов
+    const safeTitle = (video.title || 'Lesson')
+      .substring(0, 30)
+      .replace(/[^a-zа-я0-9]/gi, '_');
+    a.download = `WatchWise_${safeTitle}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const processText = (text: string) => {
@@ -76,6 +130,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
       }
 
       if (flashcards.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const terms = flashcards
           .map((f: any) => f.term)
           .sort((a: string, b: string) => b.length - a.length);
@@ -88,6 +143,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
         const subParts = part.split(regex);
 
         return subParts.map((subPart, j) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const matchedTerm = terms.find(
             (t: string) => t.toLowerCase() === subPart.toLowerCase(),
           );
@@ -112,6 +168,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const processContent = (nodeContent: any): any => {
     if (typeof nodeContent === 'string') {
       return processText(nodeContent);
@@ -148,21 +205,32 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
         </TabsTrigger>
       </TabsList>
 
-      {/* Контейнер с min-h-0 позволяет внутреннему скроллу работать правильно */}
       <div className='flex-1 mt-4 min-h-0 flex flex-col'>
-        {/* Обрати внимание на data-[state=active]:flex flex-col — это делает вкладку flex-контейнером, когда она открыта */}
         <TabsContent
           value='summary'
           className='h-full m-0 data-[state=active]:flex flex-col data-[state=inactive]:hidden'
         >
           <Card className='flex-1 flex flex-col border-none shadow-none min-h-0'>
-            <CardHeader className='p-4 pb-2 shrink-0'>
-              <CardTitle className='text-lg'>Краткое содержание</CardTitle>
-              <CardDescription className='text-xs'>
-                Сгенерировано YandexGPT
-              </CardDescription>
+            <CardHeader className='p-4 pb-2 flex flex-row items-center justify-between space-y-0 shrink-0'>
+              <div>
+                <CardTitle className='text-lg'>Краткое содержание</CardTitle>
+                <CardDescription className='text-xs'>
+                  Сгенерировано YandexGPT
+                </CardDescription>
+              </div>
+              {/* Кнопка скачивания MD */}
+              {content && (
+                <Button
+                  onClick={handleExportMD}
+                  variant='outline'
+                  size='sm'
+                  className='font-semibold shadow-sm h-8'
+                >
+                  <Download className='h-4 w-4 mr-2' />
+                  Markdown
+                </Button>
+              )}
             </CardHeader>
-            {/* flex-1 и min-h-0 забирают оставшееся место под скролл */}
             <ScrollArea className='flex-1 px-4 min-h-0'>
               <div className='text-sm space-y-4 pb-4'>
                 {content?.summary ? (
@@ -188,6 +256,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
                     <p className='text-[10px] font-bold uppercase text-primary tracking-wider'>
                       Полный транскрипт (анализ не запущен):
                     </p>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {transcript.map((chunk: any) => (
                       <div
                         key={chunk.id}
@@ -225,6 +294,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
             <ScrollArea className='flex-1 p-4 min-h-0'>
               <div className='space-y-4 pb-4'>
                 {questions.length > 0 ? (
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   questions.map((q: any, idx: number) => (
                     <Card
                       key={q.id}

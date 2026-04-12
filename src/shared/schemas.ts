@@ -63,4 +63,5 @@ export const AIGeneratedContentSchema = z.object({
   summary: z.string(),
   questions: z.array(QuizQuestionSchema).optional().default([]),
   flashcards: z.array(FlashcardSchema).optional().default([]),
+  tags: z.array(z.string()).max(3).optional().default([]),
 });

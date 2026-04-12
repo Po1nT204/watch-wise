@@ -39,7 +39,7 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
     return { error: 'Не удалось определить ID видео или платформу' };
 
   try {
-    logger.info({ videoData }, 'Starting ADD VIDEO to DB');
+    logger.info({ videoId: videoData.id }, 'Starting ADD VIDEO to DB');
     let videoTitle = `${videoData.platform.toUpperCase()} Video ${videoData.id}`;
     let thumbnail = '';
 
@@ -87,10 +87,16 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
 
     // 3. Обновляем кэш страницы дашборда, чтобы список обновился мгновенно
     revalidatePath('/dashboard');
-    logger.info({ videoData, success: true }, 'ADD VIDEO to DB completed');
+    logger.info(
+      { videoId: videoData.id, success: true },
+      'ADD VIDEO to DB completed',
+    );
     return { success: 'Видео добавлено!', videoId: video.id };
   } catch (error) {
-    logger.error({ err: error, videoData }, 'ADD VIDEO to DB failed');
+    logger.error(
+      { err: error, videoId: videoData.id },
+      'ADD VIDEO to DB failed',
+    );
     return { error: 'Ошибка при добавлении видео' };
   }
 };
@@ -256,6 +262,52 @@ export const startAnalysis = async (
             definition: f.definition,
           })),
         });
+      }
+
+      if (aiResults.tags && aiResults.tags.length > 0) {
+        const tagIds: string[] = [];
+
+        for (const tagName of aiResults.tags) {
+          // Нормализуем имя (с большой буквы, остальное строчными)
+          const normalizedName =
+            tagName.trim().charAt(0).toUpperCase() +
+            tagName.trim().slice(1).toLowerCase();
+          if (!normalizedName) continue;
+
+          // Используем upsert: если тег есть у юзера - берем его, если нет - создаем
+          const tag = await tx.tag.upsert({
+            where: {
+              userId_name: {
+                userId: userId,
+                name: normalizedName,
+              },
+            },
+            update: {},
+            create: {
+              name: normalizedName,
+              userId: userId,
+              color: '#6366f1', // Дефолтный цвет (индиго)
+            },
+          });
+          tagIds.push(tag.id);
+        }
+
+        // Привязываем найденные/созданные теги к прогрессу видео
+        if (tagIds.length > 0) {
+          await tx.videoProgress.update({
+            where: {
+              userId_videoId: {
+                userId: userId,
+                videoId: videoId,
+              },
+            },
+            data: {
+              tags: {
+                connect: tagIds.map((id) => ({ id })),
+              },
+            },
+          });
+        }
       }
     });
 
