@@ -13,6 +13,8 @@ import { FileText, GraduationCap, LibraryBig, Download } from 'lucide-react';
 import { Flashcards } from './flashcards';
 import Markdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
+import { DeleteQuestionButton } from './delete-question-button';
+import { EditQuestionDialog } from './edit-question-dialog';
 
 interface VideoTabsProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -298,21 +300,58 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
                   questions.map((q: any, idx: number) => (
                     <Card
                       key={q.id}
-                      className='p-4 border-muted shadow-none shrink-0'
+                      className='p-4 border-muted shadow-none shrink-0 group relative'
                     >
-                      <p className='text-sm font-semibold leading-tight'>
-                        {idx + 1}. {q.text}
-                      </p>
-                      <div className='mt-3 grid gap-2'>
+                      <div className='flex justify-between items-start gap-4'>
+                        <p className='text-sm font-semibold leading-tight flex-1 mt-1'>
+                          <span className='text-muted-foreground mr-1'>
+                            [{formatDisplayTime(q.timestamp)}]
+                          </span>
+                          {idx + 1}. {q.text}
+                        </p>
+                        {content.mode === 'teacher' && (
+                          <div className='flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-card rounded-md border shadow-sm'>
+                            <EditQuestionDialog
+                              question={q}
+                              videoId={video.id}
+                            />
+                            <DeleteQuestionButton
+                              questionId={q.id}
+                              videoId={video.id}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className='mt-4 grid gap-2'>
                         {q.options.map((opt: string, i: number) => (
                           <div
                             key={i}
-                            className='text-[12px] p-2 rounded border bg-muted/30 text-muted-foreground'
+                            className={`text-[12px] p-2.5 rounded border transition-colors ${
+                              content.mode === 'teacher' && i === q.correctIdx
+                                ? 'bg-primary/10 border-primary/30 font-medium text-foreground'
+                                : 'bg-muted/30 text-muted-foreground'
+                            }`}
                           >
                             {opt}
+                            {content.mode === 'teacher' &&
+                              i === q.correctIdx && (
+                                <span className='ml-2 text-[10px] text-primary font-bold uppercase tracking-wider'>
+                                  Правильный ответ
+                                </span>
+                              )}
                           </div>
                         ))}
                       </div>
+
+                      {content.mode === 'teacher' && q.explanation && (
+                        <div className='mt-3 p-3 bg-muted/50 rounded-md border-l-2 border-primary/50 text-xs italic text-muted-foreground'>
+                          <span className='font-semibold text-foreground not-italic mr-1'>
+                            Пояснение:
+                          </span>
+                          {q.explanation}
+                        </div>
+                      )}
                     </Card>
                   ))
                 ) : (
