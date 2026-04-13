@@ -28,11 +28,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, Pencil, Plus, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Схема специально для формы (позволяем RadioGroup работать со строками)
 const formSchema = z.object({
   id: z.string(),
   videoId: z.string(),
   text: z.string().min(3, 'Слишком короткий вопрос'),
-  timestamp: z.coerce.number().nonnegative('Время не может быть отрицательным'),
+  timestamp: z.union([z.string(), z.number()]), // Input возвращает строку
   options: z
     .array(
       z.object({
@@ -40,9 +41,11 @@ const formSchema = z.object({
       }),
     )
     .min(2, 'Минимум 2 варианта ответа'),
-  correctIdx: z.coerce.number().min(0),
-  explanation: z.string().optional().nullable(),
+  correctIdx: z.string(), // RadioGroup возвращает строку
+  explanation: z.string().optional(),
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface EditQuestionDialogProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,16 +60,16 @@ export function EditQuestionDialog({
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      id: question.id,
-      videoId,
-      text: question.text,
+      id: String(question.id),
+      videoId: String(videoId),
+      text: String(question.text),
       timestamp: question.timestamp,
       options: question.options.map((opt: string) => ({ value: opt })),
-      correctIdx: question.correctIdx,
-      explanation: question.explanation || '',
+      correctIdx: String(question.correctIdx),
+      explanation: question.explanation ? String(question.explanation) : '',
     },
   });
 
@@ -75,10 +78,15 @@ export function EditQuestionDialog({
     name: 'options',
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // Преобразуем массив объектов обратно в массив строк для сервера
+  const onSubmit = (values: FormValues) => {
+    // Преобразуем данные в формат, который ожидает серверный экшен (числа и плоский массив)
     const payload = {
-      ...values,
+      id: values.id,
+      videoId: values.videoId,
+      text: values.text,
+      timestamp: Number(values.timestamp),
+      correctIdx: Number(values.correctIdx),
+      explanation: values.explanation || null,
       options: values.options.map((o) => o.value),
     };
 
@@ -157,7 +165,7 @@ export function EditQuestionDialog({
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
-                        defaultValue={field.value.toString()}
+                        defaultValue={field.value}
                         className='space-y-3'
                         disabled={isPending}
                       >
@@ -184,8 +192,7 @@ export function EditQuestionDialog({
                                     <Input
                                       {...inputField}
                                       className={
-                                        field.value.toString() ===
-                                        index.toString()
+                                        field.value === index.toString()
                                           ? 'border-primary ring-1 ring-primary/20'
                                           : ''
                                       }
