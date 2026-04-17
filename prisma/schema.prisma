@@ -137,6 +137,8 @@ model GeneratedContent {
   id          String   @id @default(cuid())
   difficulty  String   // 'easy', 'medium', 'hard'
   mode        String   // 'student', 'teacher'
+  audience    String   @default("student") // 'schoolboy', 'student', 'expert'
+  focus       String   @default("theory")  // 'theory', 'practice', 'facts'
   summary     String   @db.Text
   
   // --- Телеметрия LLM ---

@@ -17,6 +17,8 @@ interface AnalysisSettings {
   mode: string; // в будущем enum и импорт из файла types
   difficulty: string; // в будущем enum и импорт из файла types
   questionsCount: number;
+  audience: string; // в будущем enum и импорт из файла types
+  focus: string; // в будущем enum и импорт из файла types
 }
 
 export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
@@ -241,6 +243,8 @@ export const startAnalysis = async (
           userId: userId,
           difficulty: settings.difficulty,
           mode: settings.mode,
+          audience: settings.audience,
+          focus: settings.focus,
           summary: aiContent.summary,
           latencyMs: aiTelemetry.latencyMs,
           tokensUsed: aiTelemetry.tokensUsed,
@@ -332,7 +336,7 @@ export const startAnalysis = async (
       data: { status: 'FAILED' },
     });
     return {
-      error: 'Ошибка анализа контента. Попробуйте позже.',
+      error: error.message,
     };
   }
 };
