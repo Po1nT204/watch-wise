@@ -227,6 +227,10 @@ export const startAnalysis = async (
       },
     );
 
+    // Извлекаем контент и телеметрию
+    const aiContent = aiResults.content;
+    const aiTelemetry = aiResults.telemetry;
+
     const userId = session.user.id;
     if (!userId) throw new Error('User ID not found in session');
 
@@ -237,13 +241,15 @@ export const startAnalysis = async (
           userId: userId,
           difficulty: settings.difficulty,
           mode: settings.mode,
-          summary: aiResults.summary,
+          summary: aiContent.summary,
+          latencyMs: aiTelemetry.latencyMs,
+          tokensUsed: aiTelemetry.tokensUsed,
         },
       });
 
-      if (aiResults.questions && aiResults.questions.length > 0) {
+      if (aiContent.questions && aiContent.questions.length > 0) {
         await tx.quizQuestion.createMany({
-          data: aiResults.questions.map((q: any) => ({
+          data: aiContent.questions.map((q: any) => ({
             contentId: generatedContent.id,
             text: q.text,
             timestamp: q.timestamp || 0,
@@ -254,9 +260,9 @@ export const startAnalysis = async (
         });
       }
 
-      if (aiResults.flashcards && aiResults.flashcards?.length > 0) {
+      if (aiContent.flashcards && aiContent.flashcards?.length > 0) {
         await tx.flashcard.createMany({
-          data: aiResults.flashcards.map((f: any) => ({
+          data: aiContent.flashcards.map((f: any) => ({
             contentId: generatedContent.id,
             term: f.term,
             definition: f.definition,
@@ -264,17 +270,15 @@ export const startAnalysis = async (
         });
       }
 
-      if (aiResults.tags && aiResults.tags.length > 0) {
+      if (aiContent.tags && aiContent.tags.length > 0) {
         const tagIds: string[] = [];
 
-        for (const tagName of aiResults.tags) {
-          // Нормализуем имя (с большой буквы, остальное строчными)
+        for (const tagName of aiContent.tags) {
           const normalizedName =
             tagName.trim().charAt(0).toUpperCase() +
             tagName.trim().slice(1).toLowerCase();
           if (!normalizedName) continue;
 
-          // Используем upsert: если тег есть у юзера - берем его, если нет - создаем
           const tag = await tx.tag.upsert({
             where: {
               userId_name: {
@@ -286,13 +290,12 @@ export const startAnalysis = async (
             create: {
               name: normalizedName,
               userId: userId,
-              color: '#6366f1', // Дефолтный цвет (индиго)
+              color: '#6366f1',
             },
           });
           tagIds.push(tag.id);
         }
 
-        // Привязываем найденные/созданные теги к прогрессу видео
         if (tagIds.length > 0) {
           await tx.videoProgress.update({
             where: {
@@ -317,7 +320,10 @@ export const startAnalysis = async (
     });
 
     revalidatePath(`/dashboard/video/${videoId}`);
-    logger.info({ videoId, success: true }, 'Analysis completed');
+    logger.info(
+      { videoId, telemetry: aiTelemetry, success: true },
+      'Analysis completed',
+    );
     return { success: true };
   } catch (error) {
     logger.error({ err: error, videoId }, 'Analysis Global Error');

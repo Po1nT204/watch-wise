@@ -55,15 +55,16 @@ export class YandexCloudService {
   "tags": ["Тег1", "Тег2"]
 }`;
 
-    // Обертка для выполнения запроса с возможностью повтора
     const runInference = async () => {
       logger.info(
         { settings, transcriptLength: transcript.length },
         'Requesting YandexGPT for learning content',
       );
 
-      // Таймаут на уровне запроса: 45 секунд (Node.js 16.14+)
       const signal = AbortSignal.timeout(45000);
+
+      // ЗАМЕР ВРЕМЕНИ: Старт
+      const startTime = performance.now();
 
       const response = await this.openai.chat.completions.create(
         {
@@ -80,12 +81,19 @@ export class YandexCloudService {
           ],
           temperature: 0.3,
         },
-        { signal }, // Передаем сигнал таймаута
+        { signal },
       );
+
+      // ЗАМЕР ВРЕМЕНИ: Финиш
+      const endTime = performance.now();
+      const latencyMs = Math.round(endTime - startTime);
+
+      // ИЗВЛЕЧЕНИЕ ТОКЕНОВ
+      const tokensUsed = response.usage?.total_tokens || 0;
 
       const content = response.choices[0].message.content || '';
       logger.debug(
-        { responseContent: content.substring(0, 100) },
+        { responseContent: content.substring(0, 100), latencyMs, tokensUsed },
         'Received response from YandexGPT',
       );
 
@@ -95,7 +103,6 @@ export class YandexCloudService {
           { contentFragment: content.substring(0, 100) },
           'YandexGPT returned non-JSON format',
         );
-        // Выбрасываем ошибку, чтобы p-retry попытался снова!
         throw new Error(
           'Ответ нейросети не содержит структурированных данных (JSON)',
         );
@@ -106,15 +113,22 @@ export class YandexCloudService {
       const validatedData = AIGeneratedContentSchema.parse(parsedJson);
 
       logger.info('Learning content successfully generated and validated');
-      return validatedData;
+
+      // Возвращаем данные вместе с собранной телеметрией
+      return {
+        content: validatedData,
+        telemetry: {
+          latencyMs,
+          tokensUsed,
+        },
+      };
     };
 
     try {
-      // Исполняем с паттерном Exponential Backoff (до 3 попыток)
       return await pRetry(runInference, {
-        retries: 2, // 1 первоначальная + 2 повторных = 3 попытки
-        minTimeout: 2000, // Минимальная задержка 2 сек
-        maxTimeout: 10000, // Максимальная задержка 10 сек
+        retries: 2,
+        minTimeout: 2000,
+        maxTimeout: 10000,
         onFailedAttempt: (error) => {
           logger.warn(
             {

@@ -139,6 +139,10 @@ model GeneratedContent {
   mode        String   // 'student', 'teacher'
   summary     String   @db.Text
   
+  // --- Телеметрия LLM ---
+  latencyMs   Int?     // Время ответа API в миллисекундах
+  tokensUsed  Int?     // Израсходованные токены
+  
   createdAt   DateTime @default(now())
   
   userId      String
