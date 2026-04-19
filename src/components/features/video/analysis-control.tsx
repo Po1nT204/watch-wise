@@ -81,7 +81,11 @@ export function AnalysisControl({
             <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              position='popper'
+              sideOffset={4}
+              className='bg-background shadow-md z-50'
+            >
               <SelectItem value='student'>
                 <div className='flex items-center gap-2'>
                   <GraduationCap className='h-4 w-4' /> Студент
@@ -105,7 +109,11 @@ export function AnalysisControl({
             <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              position='popper'
+              sideOffset={4}
+              className='bg-background shadow-md z-50'
+            >
               <SelectItem value='schoolboy'>Как школьнику (просто)</SelectItem>
               <SelectItem value='student'>Студенту (баланс)</SelectItem>
               <SelectItem value='expert'>Эксперту (академично)</SelectItem>
@@ -122,7 +130,11 @@ export function AnalysisControl({
             <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              position='popper'
+              sideOffset={4}
+              className='bg-background shadow-md z-50'
+            >
               <SelectItem value='theory'>Фундаментальная теория</SelectItem>
               <SelectItem value='practice'>Практическое применение</SelectItem>
               <SelectItem value='facts'>Даты, имена и факты</SelectItem>
@@ -139,7 +151,11 @@ export function AnalysisControl({
             <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              position='popper'
+              sideOffset={4}
+              className='bg-background shadow-md z-50'
+            >
               <SelectItem value='easy'>Базовые факты</SelectItem>
               <SelectItem value='medium'>Понимание причин</SelectItem>
               <SelectItem value='hard'>Анализ и выводы</SelectItem>
