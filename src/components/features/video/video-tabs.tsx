@@ -256,7 +256,9 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
                 ) : transcript.length > 0 ? (
                   <div className='space-y-4 text-muted-foreground'>
                     <p className='text-[10px] font-bold uppercase text-primary tracking-wider'>
-                      Полный транскрипт (анализ не запущен):
+                      {video.status === 'FAILED'
+                        ? 'Анализ прерван ошибкой, но мы сохранили транскрипт:'
+                        : 'Полный транскрипт (анализ не запущен):'}
                     </p>
                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {transcript.map((chunk: any) => (
