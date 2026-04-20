@@ -6,6 +6,7 @@ import { startAnalysis } from '@/server-actions/video';
 import { Brain, GraduationCap, Loader2, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
@@ -24,40 +25,54 @@ export function AnalysisControl({
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState('student');
   const [difficulty, setDifficulty] = useState('medium');
-  const [questionsCount, setQuestionsCount] = useState('5');
+  const [questionsCount, setQuestionsCount] = useState<number>(5);
+  const [audience, setAudience] = useState('student');
+  const [focus, setFocus] = useState('theory');
+
   const router = useRouter();
 
   const handleStart = async () => {
+    if (questionsCount < 1 || questionsCount > 20) {
+      toast.error('Количество вопросов должно быть от 1 до 20');
+      return;
+    }
+
     setIsLoading(true);
-    await startAnalysis(videoId, {
+    const result = await startAnalysis(videoId, {
       mode,
       difficulty,
-      questionsCount: parseInt(questionsCount),
+      questionsCount: questionsCount,
+      audience,
+      focus,
     });
     setIsLoading(false);
+
+    if (result?.error) {
+      toast.error(result.error);
+    }
     router.refresh();
   };
 
   if (status === 'COMPLETED')
     return (
-      <p className='text-sm text-green-600 font-medium'>
+      <p className='text-sm text-green-600 font-medium text-center py-2'>
         Анализ завершен успешно!
       </p>
     );
   if (status === 'PROCESSING')
     return (
-      <div className='flex items-center gap-2 text-sm text-blue-600'>
+      <div className='flex items-center justify-center gap-2 text-sm text-primary py-2'>
         <Loader2 className='h-4 w-4 animate-spin' /> ИИ анализирует контент...
       </div>
     );
 
   return (
-    <div className='flex flex-col gap-6 p-2'>
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+    <div className='flex flex-col gap-5'>
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
         {/* Режим */}
         <div className='space-y-2'>
           <Label className='text-[11px] uppercase font-bold text-muted-foreground'>
-            Режим
+            Режим UI
           </Label>
           <Select value={mode} onValueChange={setMode}>
             <SelectTrigger className='bg-background'>
@@ -82,10 +97,52 @@ export function AnalysisControl({
           </Select>
         </div>
 
-        {/* Сложность */}
+        {/* Аудитория */}
         <div className='space-y-2'>
           <Label className='text-[11px] uppercase font-bold text-muted-foreground'>
-            Сложность
+            Подача материала
+          </Label>
+          <Select value={audience} onValueChange={setAudience}>
+            <SelectTrigger className='bg-background'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent
+              position='popper'
+              sideOffset={4}
+              className='bg-background shadow-md z-50'
+            >
+              <SelectItem value='schoolboy'>Школьнику (просто)</SelectItem>
+              <SelectItem value='student'>Студенту (баланс)</SelectItem>
+              <SelectItem value='expert'>Эксперту (строго)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Фокус анализа */}
+        <div className='space-y-2'>
+          <Label className='text-[11px] uppercase font-bold text-muted-foreground'>
+            Фокус анализа
+          </Label>
+          <Select value={focus} onValueChange={setFocus}>
+            <SelectTrigger className='bg-background'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent
+              position='popper'
+              sideOffset={4}
+              className='bg-background shadow-md z-50'
+            >
+              <SelectItem value='theory'>Фундаментальная теория</SelectItem>
+              <SelectItem value='practice'>Практическое применение</SelectItem>
+              <SelectItem value='facts'>Даты, имена и факты</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Сложность тестов */}
+        <div className='space-y-2'>
+          <Label className='text-[11px] uppercase font-bold text-muted-foreground'>
+            Сложность тестов
           </Label>
           <Select value={difficulty} onValueChange={setDifficulty}>
             <SelectTrigger className='bg-background'>
@@ -96,50 +153,49 @@ export function AnalysisControl({
               sideOffset={4}
               className='bg-background shadow-md z-50'
             >
-              <SelectItem value='easy'>Легко</SelectItem>
-              <SelectItem value='medium'>Средне</SelectItem>
-              <SelectItem value='hard'>Сложно</SelectItem>
+              <SelectItem value='easy'>Базовые знания</SelectItem>
+              <SelectItem value='medium'>Понимание причин</SelectItem>
+              <SelectItem value='hard'>Анализ и выводы</SelectItem>
             </SelectContent>
           </Select>
         </div>
+      </div>
 
-        {/* Вопросы */}
-        <div className='space-y-2'>
+      {/* Ползунок количества вопросов */}
+      <div className='space-y-3 bg-background p-4 rounded-md border'>
+        <div className='flex justify-between items-center'>
           <Label className='text-[11px] uppercase font-bold text-muted-foreground'>
-            Вопросов
+            Максимум вопросов в тесте
           </Label>
-          <Select value={questionsCount} onValueChange={setQuestionsCount}>
-            <SelectTrigger className='bg-background'>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent
-              position='popper'
-              sideOffset={4}
-              className='bg-background shadow-md z-50'
-            >
-              <SelectItem value='5'>5 вопросов</SelectItem>
-              <SelectItem value='10'>10 вопросов</SelectItem>
-              <SelectItem value='15'>15 вопросов</SelectItem>
-            </SelectContent>
-          </Select>
+          <span className='font-black text-primary'>{questionsCount} шт.</span>
         </div>
+        <input
+          type='range'
+          min={1}
+          max={20}
+          step={1}
+          value={questionsCount}
+          onChange={(e) => setQuestionsCount(parseInt(e.target.value))}
+          className='w-full accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer'
+        />
+        <p className='text-[10px] text-muted-foreground text-center pt-1'>
+          ИИ может сгенерировать меньше вопросов для короткого видео.
+        </p>
       </div>
 
       <Button
         onClick={handleStart}
         disabled={isLoading || status === 'PROCESSING'}
         size='lg'
-        className='w-full font-bold shadow-lg shadow-primary/20'
+        className='w-full font-bold shadow-md shadow-primary/20'
       >
         {isLoading || status === 'PROCESSING' ? (
           <>
-            <Loader2 className='mr-2 h-5 w-5 animate-spin' />
-            Нейросеть изучает видео...
+            <Loader2 className='mr-2 h-5 w-5 animate-spin' /> Анализ...
           </>
         ) : (
           <>
-            <Sparkles className='mr-2 h-5 w-5' />
-            Запустить полный анализ
+            <Sparkles className='mr-2 h-5 w-5' /> Запустить анализ
           </>
         )}
       </Button>

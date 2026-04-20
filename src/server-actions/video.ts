@@ -1,8 +1,12 @@
 'use server';
 
 import { z } from 'zod';
-import { VideoUrlSchema } from '@/shared/schemas';
-import { auth } from '@/config/auth'; // Твой конфиг
+import {
+  VideoUrlSchema,
+  QuizQuestionSchema,
+  FlashcardSchema,
+} from '@/shared/schemas';
+import { auth } from '@/config/auth';
 import prisma from '@/config/prisma';
 import { parseVideoUrl } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
@@ -17,6 +21,8 @@ interface AnalysisSettings {
   mode: string; // в будущем enum и импорт из файла types
   difficulty: string; // в будущем enum и импорт из файла types
   questionsCount: number;
+  audience: string; // в будущем enum и импорт из файла types
+  focus: string; // в будущем enum и импорт из файла types
 }
 
 export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
@@ -224,6 +230,8 @@ export const startAnalysis = async (
       {
         difficulty: settings.difficulty,
         count: settings.questionsCount,
+        audience: settings.audience,
+        focus: settings.focus,
       },
     );
 
@@ -241,6 +249,8 @@ export const startAnalysis = async (
           userId: userId,
           difficulty: settings.difficulty,
           mode: settings.mode,
+          audience: settings.audience,
+          focus: settings.focus,
           summary: aiContent.summary,
           latencyMs: aiTelemetry.latencyMs,
           tokensUsed: aiTelemetry.tokensUsed,
@@ -249,24 +259,28 @@ export const startAnalysis = async (
 
       if (aiContent.questions && aiContent.questions.length > 0) {
         await tx.quizQuestion.createMany({
-          data: aiContent.questions.map((q: any) => ({
-            contentId: generatedContent.id,
-            text: q.text,
-            timestamp: q.timestamp || 0,
-            options: q.options,
-            correctIdx: q.correctIdx,
-            explanation: q.explanation,
-          })),
+          data: aiContent.questions.map(
+            (q: z.infer<typeof QuizQuestionSchema>) => ({
+              contentId: generatedContent.id,
+              text: q.text,
+              timestamp: q.timestamp || 0,
+              options: q.options,
+              correctIdx: q.correctIdx,
+              explanation: q.explanation,
+            }),
+          ),
         });
       }
 
       if (aiContent.flashcards && aiContent.flashcards?.length > 0) {
         await tx.flashcard.createMany({
-          data: aiContent.flashcards.map((f: any) => ({
-            contentId: generatedContent.id,
-            term: f.term,
-            definition: f.definition,
-          })),
+          data: aiContent.flashcards.map(
+            (f: z.infer<typeof FlashcardSchema>) => ({
+              contentId: generatedContent.id,
+              term: f.term,
+              definition: f.definition,
+            }),
+          ),
         });
       }
 
@@ -325,14 +339,15 @@ export const startAnalysis = async (
       'Analysis completed',
     );
     return { success: true };
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error({ err: error, videoId }, 'Analysis Global Error');
     await prisma.video.update({
       where: { id: videoId },
       data: { status: 'FAILED' },
     });
     return {
-      error: 'Ошибка анализа контента. Попробуйте позже.',
+      error:
+        error instanceof Error ? error.message : 'Неизвестная ошибка анализа',
     };
   }
 };
