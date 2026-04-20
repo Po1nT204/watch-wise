@@ -11,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { signOut } from 'next-auth/react'; // Используем клиентский signOut
+import { signOut } from 'next-auth/react';
+import Link from 'next/link';
 
 interface UserNavProps {
   user: {
@@ -19,17 +20,26 @@ interface UserNavProps {
     email?: string | null;
     image?: string | null;
   };
+  level: number;
 }
 
-export function UserNav({ user }: UserNavProps) {
+export function UserNav({ user, level }: UserNavProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
-          <Avatar className='h-8 w-8'>
+        <Button
+          variant='ghost'
+          className='relative h-9 w-9 rounded-full overflow-hidden border-2 border-primary/20 hover:border-primary/50 transition-colors'
+        >
+          <Avatar className='h-full w-full'>
             <AvatarImage src={user.image || ''} alt={user.name || ''} />
-            <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
+            <AvatarFallback className='font-bold'>
+              {user.name?.[0] || 'U'}
+            </AvatarFallback>
           </Avatar>
+          <div className='absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border border-background'>
+            {level}
+          </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className='w-56' align='end' forceMount>
@@ -39,12 +49,18 @@ export function UserNav({ user }: UserNavProps) {
             <p className='text-xs leading-none text-muted-foreground'>
               {user.email}
             </p>
+            <p className='text-xs font-bold text-primary mt-1'>
+              Уровень {level}
+            </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>Профиль</DropdownMenuItem>
-          <DropdownMenuItem>Настройки</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href='/dashboard/settings' className='cursor-pointer w-full'>
+              Настройки
+            </Link>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })}>
