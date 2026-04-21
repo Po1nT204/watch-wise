@@ -29,7 +29,7 @@ export function UserNav({ user, level }: UserNavProps) {
       <DropdownMenuTrigger asChild>
         <Button
           variant='ghost'
-          className='relative h-9 w-9 rounded-full overflow-hidden border-2 border-primary/20 hover:border-primary/50 transition-colors'
+          className='relative h-10 w-10 rounded-full border-2 border-primary/20 hover:border-primary/50 transition-colors p-0'
         >
           <Avatar className='h-full w-full'>
             <AvatarImage src={user.image || ''} alt={user.name || ''} />
@@ -37,12 +37,18 @@ export function UserNav({ user, level }: UserNavProps) {
               {user.name?.[0] || 'U'}
             </AvatarFallback>
           </Avatar>
-          <div className='absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border border-background'>
+
+          <div className='absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-background shadow-sm'>
             {level}
           </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className='w-56' align='end' forceMount>
+
+      <DropdownMenuContent
+        className='w-56 bg-background shadow-xl z-50 border'
+        align='end'
+        forceMount
+      >
         <DropdownMenuLabel className='font-normal'>
           <div className='flex flex-col space-y-1'>
             <p className='text-sm font-medium leading-none'>{user.name}</p>
@@ -63,7 +69,10 @@ export function UserNav({ user, level }: UserNavProps) {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })}>
+        <DropdownMenuItem
+          className='cursor-pointer text-destructive hover:text-destructive focus:text-destructive'
+          onClick={() => signOut({ callbackUrl: '/' })}
+        >
           Выйти
         </DropdownMenuItem>
       </DropdownMenuContent>
