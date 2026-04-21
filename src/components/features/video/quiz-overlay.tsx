@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface QuizOverlayProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   question: any;
   onAnswer: (isCorrect: boolean) => void;
 }

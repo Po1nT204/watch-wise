@@ -17,9 +17,9 @@ import { toast } from 'sonner';
 
 interface VideoTagsDialogProps {
   videoId: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   currentTags: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   allTags: any[];
 }
 
