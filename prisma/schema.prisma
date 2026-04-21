@@ -49,6 +49,11 @@ model User {
   links         Json?     // Храним массив ссылок или объект { github: "", website: "" }
   location      String? 
 
+  xp            Int       @default(0)       // Текущий опыт
+  level         Int       @default(1)       // Текущий уровень
+  streak        Int       @default(0)       // Дней обучения подряд
+  lastActiveAt  DateTime?                   // Дата последней активности (для стриков)
+
   tags          Tag[]
 
   accounts      Account[]

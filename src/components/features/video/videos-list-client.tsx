@@ -24,9 +24,8 @@ import { DeleteVideoButton } from './delete-video-button';
 import { VideoTagsDialog } from './video-tags-dialog';
 
 interface VideosListClientProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   videos: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   allTags: any[];
 }
 
@@ -50,7 +49,7 @@ export function VideosListClient({ videos, allTags }: VideosListClientProps) {
 
       // 3. Фильтр по тегу (теги лежат в первом элементе массива progress)
       const videoTags = video.progress?.[0]?.tags || [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const matchesTag =
         filterTag === 'all' || videoTags.some((t: any) => t.id === filterTag);
 

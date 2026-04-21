@@ -63,11 +63,15 @@ export function VideoViewClient({ video }: { video: any }) {
 
       if (result.success) {
         toast.success(
-          `Тест завершен! Результат: ${finalScore} из ${questions.length}`,
-          {
-            duration: 5000,
-          },
+          `Тест пройден: ${finalScore}/${questions.length}. Получено +${result.earnedXp} XP! 🚀`,
+          { duration: 5000 },
         );
+        if (result.isLevelUp) {
+          toast.success(
+            `🎉 Поздравляем! Вы достигли ${result.newLevel} уровня!`,
+            { duration: 7000 },
+          );
+        }
       } else {
         toast.error('Не удалось сохранить результат тестирования.');
       }

@@ -50,11 +50,25 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
     let thumbnail = '';
 
     if (videoData.platform === 'youtube') {
-      const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoData.id}&format=json`;
-      const response = await fetch(oembedUrl);
-      const metadata = response.ok ? await response.json() : null;
-      if (metadata) videoTitle = metadata.title;
       thumbnail = `https://img.youtube.com/vi/${videoData.id}/maxresdefault.jpg`;
+
+      try {
+        const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoData.id}&format=json`;
+        // Ждем максимум 3 секунды, чтобы не вешать сервер
+        const response = await fetch(oembedUrl, {
+          signal: AbortSignal.timeout(3000),
+        });
+        if (response.ok) {
+          const metadata = await response.json();
+          if (metadata.title) videoTitle = metadata.title;
+        }
+      } catch (e) {
+        // Если YouTube недоступен, просто логируем warn и идем дальше с дефолтным названием
+        logger.warn(
+          { videoId: videoData.id },
+          'YouTube oEmbed fetch timed out. Using default title.',
+        );
+      }
     }
     // Для VK метаданные без API ключа получить сложно, пока оставим заглушку названия
 

@@ -14,12 +14,14 @@ import {
   PlayCircle,
   Target,
   Users,
+  Zap,
 } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { getVideosByUserId } from '@/services/video';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { getUserDashboardStats } from '@/services/analytics';
+import prisma from '@/config/prisma';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -30,12 +32,58 @@ export default async function DashboardPage() {
     getUserDashboardStats(session.user.id),
   ]);
 
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { xp: true, level: true },
+  });
+
   const recentVideos = allVideos.slice(0, 3);
+
+  // Расчеты для прогресс-бара
+  const currentXp = dbUser?.xp || 0;
+  const currentLevel = dbUser?.level || 1;
+  const xpForNextLevel = currentLevel * 100; // Простая формула: каждый новый уровень требует на 100 XP больше
+  const xpInCurrentLevel = currentXp % 100;
+  const progressPercentage = Math.round((xpInCurrentLevel / 100) * 100);
 
   return (
     <div className='flex flex-col gap-8 p-4 md:p-8'>
-      <div className='flex items-center justify-between'>
-        <h1 className='text-3xl font-black tracking-tight'>Сводка</h1>
+      {/* Заголовок и Геймификация */}
+      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
+        <div>
+          <h1 className='text-3xl font-black tracking-tight'>Сводка</h1>
+          <p className='text-muted-foreground mt-1'>
+            Отслеживайте свои успехи и возвращайтесь к материалам.
+          </p>
+        </div>
+
+        {/* Карточка текущего прогресса */}
+        <Card className='w-full md:w-80 bg-gradient-to-br from-primary/10 to-transparent border-primary/20 shadow-none'>
+          <CardContent className='p-4'>
+            <div className='flex justify-between items-center mb-2'>
+              <div className='flex items-center gap-2'>
+                <div className='bg-primary text-primary-foreground w-8 h-8 rounded-md flex items-center justify-center font-bold'>
+                  {currentLevel}
+                </div>
+                <span className='font-semibold text-sm'>Уровень</span>
+              </div>
+              <div className='text-sm font-bold text-primary flex items-center gap-1'>
+                <Zap className='h-4 w-4 fill-primary' />
+                {currentXp} XP
+              </div>
+            </div>
+
+            <div className='h-2 w-full bg-muted rounded-full overflow-hidden'>
+              <div
+                className='h-full bg-primary transition-all duration-500 ease-out'
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+            <p className='text-[10px] text-muted-foreground text-right mt-1 font-medium'>
+              {100 - xpInCurrentLevel} XP до уровня {currentLevel + 1}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* --- БЛОК СТАТИСТИКИ --- */}

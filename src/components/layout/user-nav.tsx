@@ -11,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { signOut } from 'next-auth/react'; // Используем клиентский signOut
+import { signOut } from 'next-auth/react';
+import Link from 'next/link';
 
 interface UserNavProps {
   user: {
@@ -19,35 +20,59 @@ interface UserNavProps {
     email?: string | null;
     image?: string | null;
   };
+  level: number;
 }
 
-export function UserNav({ user }: UserNavProps) {
+export function UserNav({ user, level }: UserNavProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
-          <Avatar className='h-8 w-8'>
+        <Button
+          variant='ghost'
+          className='relative h-10 w-10 rounded-full border-2 border-primary/20 hover:border-primary/50 transition-colors p-0'
+        >
+          <Avatar className='h-full w-full'>
             <AvatarImage src={user.image || ''} alt={user.name || ''} />
-            <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
+            <AvatarFallback className='font-bold'>
+              {user.name?.[0] || 'U'}
+            </AvatarFallback>
           </Avatar>
+
+          <div className='absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-background shadow-sm'>
+            {level}
+          </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className='w-56' align='end' forceMount>
+
+      <DropdownMenuContent
+        className='w-56 bg-background shadow-xl z-50 border'
+        align='end'
+        forceMount
+      >
         <DropdownMenuLabel className='font-normal'>
           <div className='flex flex-col space-y-1'>
             <p className='text-sm font-medium leading-none'>{user.name}</p>
             <p className='text-xs leading-none text-muted-foreground'>
               {user.email}
             </p>
+            <p className='text-xs font-bold text-primary mt-1'>
+              Уровень {level}
+            </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>Профиль</DropdownMenuItem>
-          <DropdownMenuItem>Настройки</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href='/dashboard/settings' className='cursor-pointer w-full'>
+              Настройки
+            </Link>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })}>
+        <DropdownMenuItem
+          className='cursor-pointer text-destructive hover:text-destructive focus:text-destructive'
+          onClick={() => signOut({ callbackUrl: '/' })}
+        >
           Выйти
         </DropdownMenuItem>
       </DropdownMenuContent>

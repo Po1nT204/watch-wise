@@ -17,7 +17,6 @@ import { DeleteQuestionButton } from './delete-question-button';
 import { EditQuestionDialog } from './edit-question-dialog';
 
 interface VideoTabsProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   video: any;
   onTimestampClick: (time: number) => void;
 }
@@ -52,7 +51,6 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
   };
 
   const handleTermClick = (matchedTerm: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const index = flashcards.findIndex((f: any) => f.term === matchedTerm);
     if (index !== -1) {
       setActiveCardIndex(index);
@@ -71,7 +69,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
 
     if (flashcards.length > 0) {
       md += `## 2. Глоссарий (Термины)\n\n`;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       flashcards.forEach((f: any) => {
         md += `- **${f.term}**: ${f.definition}\n`;
       });
@@ -80,7 +78,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
 
     if (questions.length > 0) {
       md += `## 3. Проверочный тест\n\n`;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       questions.forEach((q: any, i: number) => {
         md += `### Вопрос ${i + 1}. ${q.text}\n`;
         q.options.forEach((opt: string, optIdx: number) => {
@@ -132,7 +130,6 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
       }
 
       if (flashcards.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const terms = flashcards
           .map((f: any) => f.term)
           .sort((a: string, b: string) => b.length - a.length);
@@ -145,7 +142,6 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
         const subParts = part.split(regex);
 
         return subParts.map((subPart, j) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const matchedTerm = terms.find(
             (t: string) => t.toLowerCase() === subPart.toLowerCase(),
           );
@@ -170,7 +166,6 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const processContent = (nodeContent: any): any => {
     if (typeof nodeContent === 'string') {
       return processText(nodeContent);
@@ -298,7 +293,6 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
             <ScrollArea className='flex-1 p-4 min-h-0'>
               <div className='space-y-4 pb-4'>
                 {questions.length > 0 ? (
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   questions.map((q: any, idx: number) => (
                     <Card
                       key={q.id}

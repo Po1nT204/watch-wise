@@ -7,7 +7,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function FlipCard({ card }: { card: any }) {
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -56,7 +55,6 @@ function FlipCard({ card }: { card: any }) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function GlobalFlashcards({ cards }: { cards: any[] }) {
   const [search, setSearch] = useState('');
 

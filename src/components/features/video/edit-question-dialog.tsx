@@ -48,7 +48,6 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface EditQuestionDialogProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   question: any;
   videoId: string;
 }
