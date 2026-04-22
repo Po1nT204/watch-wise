@@ -27,6 +27,7 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, Pencil, Plus, Trash } from 'lucide-react';
 import { toast } from 'sonner';
+import { QuizQuestion } from '@/shared/types';
 
 // Схема специально для формы (позволяем RadioGroup работать со строками)
 const formSchema = z.object({
@@ -48,7 +49,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface EditQuestionDialogProps {
-  question: any;
+  question: QuizQuestion;
   videoId: string;
 }
 
@@ -66,7 +67,9 @@ export function EditQuestionDialog({
       videoId: String(videoId),
       text: String(question.text),
       timestamp: question.timestamp,
-      options: question.options.map((opt: string) => ({ value: opt })),
+      options: (question.options as string[]).map((opt: string) => ({
+        value: opt,
+      })),
       correctIdx: String(question.correctIdx),
       explanation: question.explanation ? String(question.explanation) : '',
     },

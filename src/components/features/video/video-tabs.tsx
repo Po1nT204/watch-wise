@@ -15,9 +15,15 @@ import Markdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { DeleteQuestionButton } from './delete-question-button';
 import { EditQuestionDialog } from './edit-question-dialog';
+import {
+  Flashcard,
+  QuizQuestion,
+  TranscriptChunk,
+  VideoWithRelations,
+} from '@/shared/types';
 
 interface VideoTabsProps {
-  video: any;
+  video: VideoWithRelations;
   onTimestampClick: (time: number) => void;
 }
 
@@ -27,8 +33,8 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
 
   const transcript = video?.transcriptChunks || [];
   const content = video?.generatedContents?.[0];
-  const questions = content?.questions || [];
-  const flashcards = content?.flashcards || [];
+  const questions = (content?.questions || []) as QuizQuestion[];
+  const flashcards = (content?.flashcards || []) as Flashcard[];
 
   const parseTimestamp = (ts: string) => {
     const cleanTs = ts.replace(/[\[\]]/g, '');
@@ -51,7 +57,9 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
   };
 
   const handleTermClick = (matchedTerm: string) => {
-    const index = flashcards.findIndex((f: any) => f.term === matchedTerm);
+    const index = flashcards.findIndex(
+      (f: Flashcard) => f.term === matchedTerm,
+    );
     if (index !== -1) {
       setActiveCardIndex(index);
     }
@@ -70,7 +78,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
     if (flashcards.length > 0) {
       md += `## 2. Глоссарий (Термины)\n\n`;
 
-      flashcards.forEach((f: any) => {
+      flashcards.forEach((f: Flashcard) => {
         md += `- **${f.term}**: ${f.definition}\n`;
       });
       md += `\n`;
@@ -79,9 +87,9 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
     if (questions.length > 0) {
       md += `## 3. Проверочный тест\n\n`;
 
-      questions.forEach((q: any, i: number) => {
+      questions.forEach((q: QuizQuestion, i: number) => {
         md += `### Вопрос ${i + 1}. ${q.text}\n`;
-        q.options.forEach((opt: string, optIdx: number) => {
+        (q.options as string[]).forEach((opt: string, optIdx: number) => {
           const isCorrect = optIdx === q.correctIdx;
           const mark = isCorrect ? '[x]' : '[ ]';
           md += `- ${mark} ${opt}\n`;
@@ -131,7 +139,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
 
       if (flashcards.length > 0) {
         const terms = flashcards
-          .map((f: any) => f.term)
+          .map((f: Flashcard) => f.term)
           .sort((a: string, b: string) => b.length - a.length);
 
         const escapedTerms = terms.map((t: string) =>
@@ -166,7 +174,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
     });
   };
 
-  const processContent = (nodeContent: any): any => {
+  const processContent = (nodeContent: React.ReactNode): React.ReactNode => {
     if (typeof nodeContent === 'string') {
       return processText(nodeContent);
     }
@@ -255,8 +263,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
                         ? 'Анализ прерван ошибкой, но мы сохранили транскрипт:'
                         : 'Полный транскрипт (анализ не запущен):'}
                     </p>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {transcript.map((chunk: any) => (
+                    {transcript.map((chunk: TranscriptChunk) => (
                       <div
                         key={chunk.id}
                         className='group cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors border-l-2 border-transparent hover:border-primary'
@@ -293,7 +300,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
             <ScrollArea className='flex-1 p-4 min-h-0'>
               <div className='space-y-4 pb-4'>
                 {questions.length > 0 ? (
-                  questions.map((q: any, idx: number) => (
+                  questions.map((q: QuizQuestion, idx: number) => (
                     <Card
                       key={q.id}
                       className='p-4 border-muted shadow-none shrink-0 group relative'
@@ -320,24 +327,26 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
                       </div>
 
                       <div className='mt-4 grid gap-2'>
-                        {q.options.map((opt: string, i: number) => (
-                          <div
-                            key={i}
-                            className={`text-[12px] p-2.5 rounded border transition-colors ${
-                              content.mode === 'teacher' && i === q.correctIdx
-                                ? 'bg-primary/10 border-primary/30 font-medium text-foreground'
-                                : 'bg-muted/30 text-muted-foreground'
-                            }`}
-                          >
-                            {opt}
-                            {content.mode === 'teacher' &&
-                              i === q.correctIdx && (
-                                <span className='ml-2 text-[10px] text-primary font-bold uppercase tracking-wider'>
-                                  Правильный ответ
-                                </span>
-                              )}
-                          </div>
-                        ))}
+                        {(q.options as string[]).map(
+                          (opt: string, i: number) => (
+                            <div
+                              key={i}
+                              className={`text-[12px] p-2.5 rounded border transition-colors ${
+                                content.mode === 'teacher' && i === q.correctIdx
+                                  ? 'bg-primary/10 border-primary/30 font-medium text-foreground'
+                                  : 'bg-muted/30 text-muted-foreground'
+                              }`}
+                            >
+                              {opt}
+                              {content.mode === 'teacher' &&
+                                i === q.correctIdx && (
+                                  <span className='ml-2 text-[10px] text-primary font-bold uppercase tracking-wider'>
+                                    Правильный ответ
+                                  </span>
+                                )}
+                            </div>
+                          ),
+                        )}
                       </div>
 
                       {content.mode === 'teacher' && q.explanation && (

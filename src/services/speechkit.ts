@@ -2,28 +2,37 @@ import { logger } from '@/config/logger';
 import axios from 'axios';
 import pRetry from 'p-retry';
 
+interface SpeechKitV3Chunk {
+  result?: {
+    final?: {
+      alternatives?: Array<{
+        text: string;
+        words?: Array<{
+          startTimeMs: string;
+          endTimeMs: string;
+        }>;
+      }>;
+    };
+    finalRefinement?: {
+      normalizedText?: {
+        alternatives?: Array<{
+          text: string;
+          words?: Array<{
+            startTimeMs: string;
+            endTimeMs: string;
+          }>;
+        }>;
+      };
+    };
+  };
+}
+
 export interface SpeechKitResponse {
   done: boolean;
   id: string;
   createdAt: string;
   createdBy: string;
   modifiedAt: string;
-  response?: {
-    '@type': string;
-    chunks: Array<{
-      alternatives: Array<{
-        words: Array<{
-          startTime: string;
-          endTime: string;
-          text: string;
-          confidence: number;
-        }>;
-        text: string;
-        confidence: number;
-      }>;
-      channelTag: string;
-    }>;
-  };
   error?: {
     code: number;
     message: string;
@@ -43,22 +52,18 @@ export class SpeechKitService {
     return id;
   }
 
-  /**
-   * Общая обертка для HTTP-вызовов к Yandex API с Retry и Timeout
-   */
-  private static async fetchWithRetry(
-    requestFn: (signal: AbortSignal) => Promise<any>,
-  ) {
+  private static async fetchWithRetry<T>(
+    requestFn: (signal: AbortSignal) => Promise<T>,
+  ): Promise<T> {
     return pRetry(
       async () => {
-        // Устанавливаем жесткий таймаут 15 секунд на каждый HTTP-запрос
         const signal = AbortSignal.timeout(15000);
         return await requestFn(signal);
       },
       {
         retries: 3,
         minTimeout: 1000,
-        factor: 2, // Экспоненциальное увеличение задержки
+        factor: 2,
         onFailedAttempt: (error) => {
           logger.warn(
             {
@@ -72,9 +77,6 @@ export class SpeechKitService {
     );
   }
 
-  /**
-   * Отправляет файл из S3 на асинхронное распознавание
-   */
   static async createTask(fileUri: string): Promise<string> {
     const apiKey = this.getApiKey();
     const folderId = this.getFolderId();
@@ -103,7 +105,7 @@ export class SpeechKitService {
               Authorization: `Api-Key ${apiKey}`,
               'x-folder-id': folderId,
             },
-            signal, // Передаем AbortSignal в axios
+            signal,
           },
         ),
       );
@@ -122,13 +124,9 @@ export class SpeechKitService {
     }
   }
 
-  /**
-   * Проверяет статус операции
-   */
   static async getTaskStatus(taskId: string): Promise<SpeechKitResponse> {
     const apiKey = this.getApiKey();
 
-    // Оставляем только таймаут, чтобы не подвис запрос
     const response = await axios.get(
       `https://operation.api.cloud.yandex.net/operations/${taskId}`,
       {
@@ -143,9 +141,6 @@ export class SpeechKitService {
     return response.data;
   }
 
-  /**
-   * Получение самого текста (для API v3 это отдельный шаг после того как done: true)
-   */
   static async getRecognitionResult(taskId: string) {
     const apiKey = this.getApiKey();
 
@@ -162,27 +157,24 @@ export class SpeechKitService {
     return response.data;
   }
 
-  static parseV3Response(rawResponse: any) {
+  static parseV3Response(rawResponse: unknown) {
     const chunks: { startTime: number; endTime: number; text: string }[] = [];
-
-    let results: any[] = [];
+    let results: SpeechKitV3Chunk[] = [];
 
     try {
-      logger.info(
-        { responseLength: rawResponse.length },
-        'Starting PARSE AUDIO from speechkit',
-      );
+      logger.info('Starting PARSE AUDIO from speechkit');
+
       if (typeof rawResponse === 'string') {
         const normalizedResponse = rawResponse.replace(/\}\s*\{/g, '}|||{');
         const jsonStrings = normalizedResponse.split('|||');
-
         results = jsonStrings.map((str) => JSON.parse(str));
+      } else if (Array.isArray(rawResponse)) {
+        results = rawResponse as SpeechKitV3Chunk[];
       } else {
-        results = Array.isArray(rawResponse) ? rawResponse : [rawResponse];
+        results = [rawResponse as SpeechKitV3Chunk];
       }
 
-      results.forEach((item: any) => {
-        // В API v3 текст может быть в разных блоках, проверяем все варианты
+      results.forEach((item) => {
         const finalResult =
           item.result?.final || item.result?.finalRefinement?.normalizedText;
 
@@ -206,28 +198,9 @@ export class SpeechKitService {
         }
       });
 
-      logger.info(
-        {
-          responseLength: rawResponse.length,
-          finalResultLength: results.length,
-        },
-        'PARSE AUDIO from speechkit completed',
-      );
+      logger.info('PARSE AUDIO from speechkit completed');
     } catch (error) {
-      logger.error(
-        { err: error, responseLength: rawResponse.length },
-        'PARSE AUDIO from speechkit failed',
-      );
-      if (typeof rawResponse === 'string') {
-        logger.error(
-          {
-            err: error,
-            responseLength: rawResponse.length,
-            responseFragment: rawResponse.substring(0, 100),
-          },
-          'PARSE AUDIO from speechkit failed and was string',
-        );
-      }
+      logger.error({ err: error }, 'PARSE AUDIO from speechkit failed');
     }
 
     return chunks;

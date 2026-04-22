@@ -13,7 +13,6 @@ import {
   LibraryBig,
   PlayCircle,
   Target,
-  Users,
   Zap,
 } from 'lucide-react';
 import { redirect } from 'next/navigation';
@@ -42,7 +41,6 @@ export default async function DashboardPage() {
   // Расчеты для прогресс-бара
   const currentXp = dbUser?.xp || 0;
   const currentLevel = dbUser?.level || 1;
-  const xpForNextLevel = currentLevel * 100; // Простая формула: каждый новый уровень требует на 100 XP больше
   const xpInCurrentLevel = currentXp % 100;
   const progressPercentage = Math.round((xpInCurrentLevel / 100) * 100);
 
