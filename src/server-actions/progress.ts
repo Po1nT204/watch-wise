@@ -3,10 +3,11 @@
 import { auth } from '@/config/auth';
 import { logger } from '@/config/logger';
 import prisma from '@/config/prisma';
+import { APP_CONFIG } from '@/constants/app';
 import { revalidatePath } from 'next/cache';
 
-// Утилита для расчета уровня на основе XP (каждые 100 XP = 1 уровень)
-const calculateLevel = (xp: number) => Math.floor(xp / 100) + 1;
+const calculateLevel = (xp: number) =>
+  Math.floor(xp / APP_CONFIG.GAMIFICATION.XP_PER_LEVEL) + 1;
 
 export const saveQuizResult = async (
   contentId: string,
@@ -23,7 +24,6 @@ export const saveQuizResult = async (
       'Starting SAVE QUIZ RESULT and XP update',
     );
 
-    // 1. Получаем текущие данные пользователя для расчета геймификации
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { xp: true, level: true, streak: true, lastActiveAt: true },
@@ -31,35 +31,32 @@ export const saveQuizResult = async (
 
     if (!user) throw new Error('Пользователь не найден');
 
-    // --- ЛОГИКА ГЕЙМИФИКАЦИИ ---
-    // Начисляем 10 XP за каждый правильный ответ + 5 XP бонус за прохождение
-    const earnedXp = score * 10 + 5;
+    const earnedXp =
+      score * APP_CONFIG.GAMIFICATION.XP_PER_CORRECT_ANSWER +
+      APP_CONFIG.GAMIFICATION.XP_COMPLETION_BONUS;
     const newXp = user.xp + earnedXp;
     const newLevel = calculateLevel(newXp);
 
-    // Логика Стриков (Дней подряд)
     let newStreak = user.streak;
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Обнуляем время, оставляем только дату
+    today.setHours(0, 0, 0, 0);
 
     const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt) : null;
     if (lastActive) lastActive.setHours(0, 0, 0, 0);
 
     if (!lastActive) {
-      newStreak = 1; // Первый день активности
+      newStreak = 1;
     } else {
       const diffTime = today.getTime() - lastActive.getTime();
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
       if (diffDays === 1) {
-        newStreak += 1; // Зашел на следующий день - стрик растет
+        newStreak += 1;
       } else if (diffDays > 1) {
-        newStreak = 1; // Пропустил день - стрик сбрасывается
+        newStreak = 1;
       }
-      // Если diffDays === 0, значит уже получал XP сегодня, стрик не меняется
     }
 
-    // 2. Выполняем все обновления в одной транзакции (чтобы ничего не потерялось)
     await prisma.$transaction([
       prisma.testResult.create({
         data: {
@@ -100,7 +97,6 @@ export const saveQuizResult = async (
       'SAVE QUIZ RESULT and XP update completed',
     );
 
-    // Возвращаем данные о прогрессе на фронт, чтобы показать красивый Toast
     return {
       success: true,
       earnedXp,

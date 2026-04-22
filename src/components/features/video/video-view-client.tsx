@@ -9,6 +9,7 @@ import { useVideoStore } from '@/store/video';
 import { saveQuizResult } from '@/server-actions/progress';
 import { toast } from 'sonner';
 import { QuizQuestion, VideoWithRelations } from '@/shared/types';
+import { APP_CONFIG } from '@/constants/app';
 
 export function VideoViewClient({ video }: { video: VideoWithRelations }) {
   const [seekTo, setSeekTo] = useState<number | null>(null);
@@ -35,8 +36,8 @@ export function VideoViewClient({ video }: { video: VideoWithRelations }) {
     const found = questions.find(
       (q: QuizQuestion) =>
         // Проверяем, попало ли время (с небольшим окном)
-        currentTime >= q.timestamp + 7 &&
-        currentTime < q.timestamp + 9 &&
+        currentTime >= q.timestamp + APP_CONFIG.QUIZ.TIME_WINDOW_START &&
+        currentTime < q.timestamp + APP_CONFIG.QUIZ.TIME_WINDOW_END &&
         !askedQuestionIds.includes(q.id),
     );
 

@@ -28,25 +28,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, Pencil, Plus, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import { QuizQuestion } from '@/shared/types';
+import { EditFormSchema } from '@/shared/schemas';
 
-// Схема специально для формы (позволяем RadioGroup работать со строками)
-const formSchema = z.object({
-  id: z.string(),
-  videoId: z.string(),
-  text: z.string().min(3, 'Слишком короткий вопрос'),
-  timestamp: z.union([z.string(), z.number()]), // Input возвращает строку
-  options: z
-    .array(
-      z.object({
-        value: z.string().min(1, 'Вариант не может быть пустым'),
-      }),
-    )
-    .min(2, 'Минимум 2 варианта ответа'),
-  correctIdx: z.string(), // RadioGroup возвращает строку
-  explanation: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<typeof EditFormSchema>;
 
 interface EditQuestionDialogProps {
   question: QuizQuestion;
@@ -61,7 +45,7 @@ export function EditQuestionDialog({
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(EditFormSchema),
     defaultValues: {
       id: String(question.id),
       videoId: String(videoId),

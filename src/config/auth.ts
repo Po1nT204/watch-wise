@@ -2,14 +2,9 @@ import NextAuth from 'next-auth';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import { z } from 'zod';
 import prisma from '@/config/prisma';
 import { authConfig } from '@/config/auth.config';
-
-const signInSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
+import { SignInSchema } from '@/shared/schemas';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig, // Подключаем легкий конфиг
@@ -23,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       authorize: async (credentials) => {
-        const parsedCredentials = signInSchema.safeParse(credentials);
+        const parsedCredentials = SignInSchema.safeParse(credentials);
 
         if (!parsedCredentials.success) return null;
 

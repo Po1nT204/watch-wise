@@ -5,21 +5,7 @@ import { auth } from '@/config/auth';
 import prisma from '@/config/prisma';
 import { revalidatePath } from 'next/cache';
 import { logger } from '@/config/logger';
-
-// Схема валидации для редактирования вопроса
-const EditQuestionSchema = z.object({
-  id: z.string().min(1),
-  videoId: z.string().min(1), // Передаем ID видео для точечной ревалидации кэша
-  text: z.string().min(3, { message: 'Текст вопроса слишком короткий' }),
-  timestamp: z.number().nonnegative(),
-  options: z
-    .array(
-      z.string().min(1, { message: 'Вариант ответа не может быть пустым' }),
-    )
-    .min(2, { message: 'Нужно минимум 2 варианта ответа' }),
-  correctIdx: z.number().min(0),
-  explanation: z.string().optional().nullable(),
-});
+import { EditQuestionSchema } from '@/shared/schemas';
 
 export const updateQuizQuestion = async (
   values: z.infer<typeof EditQuestionSchema>,
