@@ -4,6 +4,7 @@ import { Features } from '@/components/features/landing/features';
 import { Button } from '@/components/ui/button';
 import { Video } from 'lucide-react';
 import { auth } from '@/config/auth';
+import { FAQ } from '@/components/features/landing/faq';
 
 export default async function Home() {
   const session = await auth();
@@ -47,7 +48,7 @@ export default async function Home() {
       <main className='flex-1'>
         <Hero />
         <Features />
-
+        <FAQ />
         {/* Footer-подобная секция CTA */}
         <section className='py-20 text-center container mx-auto px-4'>
           <div className='rounded-3xl bg-primary p-12 text-primary-foreground shadow-2xl shadow-primary/40 overflow-hidden relative'>

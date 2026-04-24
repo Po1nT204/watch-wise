@@ -22,6 +22,7 @@ import {
   VideoWithRelations,
 } from '@/shared/types';
 import { exportVideoToMarkdown } from '@/lib/export-utils';
+import { parseTimestamp, formatDisplayTime } from '@/lib/time-utils';
 
 interface VideoTabsProps {
   video: VideoWithRelations;
@@ -36,26 +37,6 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
   const content = video?.generatedContents?.[0];
   const questions = (content?.questions || []) as QuizQuestion[];
   const flashcards = (content?.flashcards || []) as Flashcard[];
-
-  const parseTimestamp = (ts: string) => {
-    const cleanTs = ts.replace(/[\[\]]/g, '');
-
-    if (cleanTs.endsWith('s')) {
-      return parseInt(cleanTs.replace('s', ''), 10);
-    }
-
-    const parts = cleanTs.split(':');
-    if (parts.length === 2) {
-      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-    }
-    return 0;
-  };
-
-  const formatDisplayTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `[${m}:${s.toString().padStart(2, '0')}]`;
-  };
 
   const handleTermClick = (matchedTerm: string) => {
     const index = flashcards.findIndex(

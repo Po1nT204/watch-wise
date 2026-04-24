@@ -17,6 +17,7 @@ import { SpeechKitService } from '@/services/speechkit';
 import { VideoDownloader } from '@/services/video-downloader';
 import { logger } from '@/config/logger';
 import { AnalysisSettings } from '@/shared/types';
+import { APP_CONFIG } from '@/constants/app';
 
 export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
   const session = await auth();
@@ -49,7 +50,7 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
         const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoData.id}&format=json`;
         // Ждем максимум 3 секунды, чтобы не вешать сервер
         const response = await fetch(oembedUrl, {
-          signal: AbortSignal.timeout(3000),
+          signal: AbortSignal.timeout(APP_CONFIG.API.YOUTUBE_FETCH_TIMEOUT),
         });
         if (response.ok) {
           const metadata = await response.json();
@@ -193,7 +194,9 @@ export const startAnalysis = async (
           let isDone = false;
           let result;
           while (!isDone) {
-            await new Promise((r) => setTimeout(r, 5000)); // Ждем 5 сек
+            await new Promise((r) =>
+              setTimeout(r, APP_CONFIG.API.SPEECHKIT_POLLING_INTERVAL),
+            ); // Ждем 5 сек
             const status = await SpeechKitService.getTaskStatus(taskId);
             if (status.done) {
               isDone = true;

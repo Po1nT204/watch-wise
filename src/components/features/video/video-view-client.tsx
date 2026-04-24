@@ -6,82 +6,21 @@ import { VideoTabs } from './video-tabs';
 import { AnalysisControl } from './analysis-control';
 import { QuizOverlay } from './quiz-overlay';
 import { useVideoStore } from '@/store/video';
-import { saveQuizResult } from '@/server-actions/progress';
-import { toast } from 'sonner';
-import { QuizQuestion, VideoWithRelations } from '@/shared/types';
-import { APP_CONFIG } from '@/constants/app';
+import { VideoWithRelations } from '@/shared/types';
+import { useVideoQuiz } from '@/hooks/useVideoQuiz';
 
 export function VideoViewClient({ video }: { video: VideoWithRelations }) {
   const [seekTo, setSeekTo] = useState<number | null>(null);
-  const [isPaused, setIsPaused] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(
-    null,
-  );
-
-  const { score, askedQuestionIds, incrementScore, addAskedQuestion, reset } =
-    useVideoStore();
-
   const content = video?.generatedContents?.[0];
   const questions = content?.questions || [];
+  const { isPaused, currentQuestion, handleProgress, handleAnswer } =
+    useVideoQuiz(questions, content?.id, video.id);
 
-  // Сбрасываем стейт при монтировании нового видео
+  const { reset } = useVideoStore();
+
   useEffect(() => {
     reset();
   }, [video.id, reset]);
-
-  const handleProgress = (currentTime: number) => {
-    // Ищем вопрос, время которого подошло (с погрешностью в 1 сек)
-    if (currentQuestion) return; // Если уже висит вопрос, ничего не делаем
-
-    const found = questions.find(
-      (q: QuizQuestion) =>
-        // Проверяем, попало ли время (с небольшим окном)
-        currentTime >= q.timestamp + APP_CONFIG.QUIZ.TIME_WINDOW_START &&
-        currentTime < q.timestamp + APP_CONFIG.QUIZ.TIME_WINDOW_END &&
-        !askedQuestionIds.includes(q.id),
-    );
-
-    if (found) {
-      setCurrentQuestion(found);
-      setIsPaused(true); // Отправляем проп в VideoPlayer
-    }
-  };
-
-  const handleAnswer = async (isCorrect: boolean) => {
-    if (!currentQuestion) return;
-    if (isCorrect) incrementScore();
-    addAskedQuestion(currentQuestion.id);
-
-    const isLastQuestion = askedQuestionIds.length + 1 === questions.length;
-
-    setCurrentQuestion(null);
-    setIsPaused(false);
-
-    if (isLastQuestion && content) {
-      const finalScore = isCorrect ? score + 1 : score;
-      const result = await saveQuizResult(
-        content.id,
-        video.id,
-        finalScore,
-        questions.length,
-      );
-
-      if (result.success) {
-        toast.success(
-          `Тест пройден: ${finalScore}/${questions.length}. Получено +${result.earnedXp} XP! 🚀`,
-          { duration: 5000 },
-        );
-        if (result.isLevelUp) {
-          toast.success(
-            `🎉 Поздравляем! Вы достигли ${result.newLevel} уровня!`,
-            { duration: 7000 },
-          );
-        }
-      } else {
-        toast.error('Не удалось сохранить результат тестирования.');
-      }
-    }
-  };
 
   return (
     <div className='grid h-full gap-6 md:grid-cols-[1.5fr_1fr] relative min-h-0'>
