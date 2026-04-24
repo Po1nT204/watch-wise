@@ -16,14 +16,7 @@ import { S3Service } from '@/services/s3';
 import { SpeechKitService } from '@/services/speechkit';
 import { VideoDownloader } from '@/services/video-downloader';
 import { logger } from '@/config/logger';
-
-interface AnalysisSettings {
-  mode: string; // в будущем enum и импорт из файла types
-  difficulty: string; // в будущем enum и импорт из файла types
-  questionsCount: number;
-  audience: string; // в будущем enum и импорт из файла types
-  focus: string; // в будущем enum и импорт из файла types
-}
+import { AnalysisSettings } from '@/shared/types';
 
 export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
   const session = await auth();
@@ -62,10 +55,10 @@ export const addVideo = async (values: z.infer<typeof VideoUrlSchema>) => {
           const metadata = await response.json();
           if (metadata.title) videoTitle = metadata.title;
         }
-      } catch (e) {
+      } catch (error) {
         // Если YouTube недоступен, просто логируем warn и идем дальше с дефолтным названием
         logger.warn(
-          { videoId: videoData.id },
+          { err: error, videoId: videoData.id },
           'YouTube oEmbed fetch timed out. Using default title.',
         );
       }

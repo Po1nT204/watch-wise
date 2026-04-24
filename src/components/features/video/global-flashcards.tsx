@@ -6,8 +6,9 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { GlobalFlashcard } from '@/shared/types';
 
-function FlipCard({ card }: { card: any }) {
+function FlipCard({ card }: { card: GlobalFlashcard }) {
   const [isFlipped, setIsFlipped] = useState(false);
 
   return (
@@ -30,7 +31,7 @@ function FlipCard({ card }: { card: any }) {
           <div className='absolute bottom-4 left-4 right-4 flex justify-between items-center'>
             <span
               className='text-[10px] text-muted-foreground truncate max-w-[70%] opacity-60'
-              title={card.content.video.title}
+              title={card.content.video.title || undefined}
             >
               {card.content.video.title || 'Видео'}
             </span>
@@ -55,7 +56,7 @@ function FlipCard({ card }: { card: any }) {
   );
 }
 
-export function GlobalFlashcards({ cards }: { cards: any[] }) {
+export function GlobalFlashcards({ cards }: { cards: GlobalFlashcard[] }) {
   const [search, setSearch] = useState('');
 
   const filteredCards = cards.filter(

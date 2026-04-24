@@ -15,16 +15,6 @@ export const LoginSchema = z.object({
   password: z.string().min(1, { message: 'Введите пароль' }),
 });
 
-// export const VideoUrlSchema = z.object({
-//   url: z
-//     .string()
-//     .min(1, { message: 'Введите ссылку' })
-//     .url({ message: 'Введите корректный URL' })
-//     .regex(/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/, {
-//       message: 'Поддерживаются только ссылки на YouTube',
-//     }),
-// });
-
 export const VideoUrlSchema = z.object({
   url: z
     .string()
@@ -64,4 +54,39 @@ export const AIGeneratedContentSchema = z.object({
   questions: z.array(QuizQuestionSchema).optional().default([]),
   flashcards: z.array(FlashcardSchema).optional().default([]),
   tags: z.array(z.string()).max(3).optional().default([]),
+});
+
+export const EditQuestionSchema = z.object({
+  id: z.string().min(1),
+  videoId: z.string().min(1), // Передаем ID видео для точечной ревалидации кэша
+  text: z.string().min(3, { message: 'Текст вопроса слишком короткий' }),
+  timestamp: z.number().nonnegative(),
+  options: z
+    .array(
+      z.string().min(1, { message: 'Вариант ответа не может быть пустым' }),
+    )
+    .min(2, { message: 'Нужно минимум 2 варианта ответа' }),
+  correctIdx: z.number().min(0),
+  explanation: z.string().optional().nullable(),
+});
+
+export const EditFormSchema = z.object({
+  id: z.string(),
+  videoId: z.string(),
+  text: z.string().min(3, 'Слишком короткий вопрос'),
+  timestamp: z.union([z.string(), z.number()]), // Input возвращает строку
+  options: z
+    .array(
+      z.object({
+        value: z.string().min(1, 'Вариант не может быть пустым'),
+      }),
+    )
+    .min(2, 'Минимум 2 варианта ответа'),
+  correctIdx: z.string(), // RadioGroup возвращает строку
+  explanation: z.string().optional(),
+});
+
+export const SignInSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
 });

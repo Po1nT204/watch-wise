@@ -2,13 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -22,11 +16,11 @@ import {
 import { PlayCircle, VideoIcon, ExternalLink, Search } from 'lucide-react';
 import { DeleteVideoButton } from './delete-video-button';
 import { VideoTagsDialog } from './video-tags-dialog';
+import { Tag, VideoWithRelations } from '@/shared/types';
 
 interface VideosListClientProps {
-  videos: any[];
-
-  allTags: any[];
+  videos: VideoWithRelations[];
+  allTags: Tag[];
 }
 
 export function VideosListClient({ videos, allTags }: VideosListClientProps) {
@@ -51,7 +45,7 @@ export function VideosListClient({ videos, allTags }: VideosListClientProps) {
       const videoTags = video.progress?.[0]?.tags || [];
 
       const matchesTag =
-        filterTag === 'all' || videoTags.some((t: any) => t.id === filterTag);
+        filterTag === 'all' || videoTags.some((t: Tag) => t.id === filterTag);
 
       return matchesSearch && matchesPlatform && matchesTag;
     })
@@ -195,8 +189,7 @@ export function VideosListClient({ videos, allTags }: VideosListClientProps) {
                       {/* Бейджики тегов для этого видео */}
                       {videoTags.length > 0 && (
                         <div className='flex items-center gap-1.5 ml-2 border-l pl-3'>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {videoTags.slice(0, 3).map((tag: any) => (
+                          {videoTags.slice(0, 3).map((tag: Tag) => (
                             <Badge
                               key={tag.id}
                               variant='outline'

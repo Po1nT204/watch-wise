@@ -8,11 +8,15 @@ import { QuizOverlay } from './quiz-overlay';
 import { useVideoStore } from '@/store/video';
 import { saveQuizResult } from '@/server-actions/progress';
 import { toast } from 'sonner';
+import { QuizQuestion, VideoWithRelations } from '@/shared/types';
+import { APP_CONFIG } from '@/constants/app';
 
-export function VideoViewClient({ video }: { video: any }) {
+export function VideoViewClient({ video }: { video: VideoWithRelations }) {
   const [seekTo, setSeekTo] = useState<number | null>(null);
   const [isPaused, setIsPaused] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<any>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(
+    null,
+  );
 
   const { score, askedQuestionIds, incrementScore, addAskedQuestion, reset } =
     useVideoStore();
@@ -30,10 +34,10 @@ export function VideoViewClient({ video }: { video: any }) {
     if (currentQuestion) return; // Если уже висит вопрос, ничего не делаем
 
     const found = questions.find(
-      (q: any) =>
+      (q: QuizQuestion) =>
         // Проверяем, попало ли время (с небольшим окном)
-        currentTime >= q.timestamp + 7 &&
-        currentTime < q.timestamp + 9 &&
+        currentTime >= q.timestamp + APP_CONFIG.QUIZ.TIME_WINDOW_START &&
+        currentTime < q.timestamp + APP_CONFIG.QUIZ.TIME_WINDOW_END &&
         !askedQuestionIds.includes(q.id),
     );
 
@@ -44,6 +48,7 @@ export function VideoViewClient({ video }: { video: any }) {
   };
 
   const handleAnswer = async (isCorrect: boolean) => {
+    if (!currentQuestion) return;
     if (isCorrect) incrementScore();
     addAskedQuestion(currentQuestion.id);
 

@@ -6,14 +6,12 @@ import { AuthError } from 'next-auth';
 import { signIn } from '@/config/auth';
 import prisma from '@/config/prisma';
 import { LoginSchema, RegisterSchema } from '@/shared/schemas';
-import { logger } from '@/config/logger'; // <-- Импорт логгера
+import { logger } from '@/config/logger';
 
-// --- Регистрация ---
 export const registerUser = async (values: z.infer<typeof RegisterSchema>) => {
   const validatedFields = RegisterSchema.safeParse(values);
 
   if (!validatedFields.success) {
-    // Логируем как предупреждение (warn), передаем email (если он там был) для контекста
     logger.warn({ email: values.email }, 'Registration validation failed');
     return { error: 'Неверные данные!' };
   }
@@ -51,7 +49,6 @@ export const registerUser = async (values: z.infer<typeof RegisterSchema>) => {
   }
 };
 
-// --- Вход ---
 export const loginUser = async (values: z.infer<typeof LoginSchema>) => {
   const validatedFields = LoginSchema.safeParse(values);
 

@@ -14,6 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AnalysisAudience,
+  AnalysisDifficulty,
+  AnalysisFocus,
+  AnalysisMode,
+} from '@/shared/types';
 
 export function AnalysisControl({
   videoId,
@@ -23,11 +29,11 @@ export function AnalysisControl({
   status: string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState('student');
-  const [difficulty, setDifficulty] = useState('medium');
+  const [mode, setMode] = useState<AnalysisMode>('student');
+  const [difficulty, setDifficulty] = useState<AnalysisDifficulty>('medium');
   const [questionsCount, setQuestionsCount] = useState<number>(5);
-  const [audience, setAudience] = useState('student');
-  const [focus, setFocus] = useState('theory');
+  const [audience, setAudience] = useState<AnalysisAudience>('student');
+  const [focus, setFocus] = useState<AnalysisFocus>('theory');
 
   const router = useRouter();
 
@@ -74,7 +80,10 @@ export function AnalysisControl({
           <Label className='text-[11px] uppercase font-bold text-muted-foreground'>
             Режим UI
           </Label>
-          <Select value={mode} onValueChange={setMode}>
+          <Select
+            value={mode}
+            onValueChange={(val) => setMode(val as AnalysisMode)}
+          >
             <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
@@ -102,7 +111,10 @@ export function AnalysisControl({
           <Label className='text-[11px] uppercase font-bold text-muted-foreground'>
             Подача материала
           </Label>
-          <Select value={audience} onValueChange={setAudience}>
+          <Select
+            value={audience}
+            onValueChange={(val) => setAudience(val as AnalysisAudience)}
+          >
             <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
@@ -123,7 +135,10 @@ export function AnalysisControl({
           <Label className='text-[11px] uppercase font-bold text-muted-foreground'>
             Фокус анализа
           </Label>
-          <Select value={focus} onValueChange={setFocus}>
+          <Select
+            value={focus}
+            onValueChange={(val) => setFocus(val as AnalysisFocus)}
+          >
             <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>
@@ -144,7 +159,10 @@ export function AnalysisControl({
           <Label className='text-[11px] uppercase font-bold text-muted-foreground'>
             Сложность тестов
           </Label>
-          <Select value={difficulty} onValueChange={setDifficulty}>
+          <Select
+            value={difficulty}
+            onValueChange={(val) => setDifficulty(val as AnalysisDifficulty)}
+          >
             <SelectTrigger className='bg-background'>
               <SelectValue />
             </SelectTrigger>

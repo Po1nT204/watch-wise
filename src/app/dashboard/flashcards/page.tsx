@@ -7,7 +7,6 @@ export default async function FlashcardsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
 
-  // Получаем все карточки пользователя с привязкой к видео
   const flashcards = await prisma.flashcard.findMany({
     where: {
       content: {

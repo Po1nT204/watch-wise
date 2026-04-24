@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/config/logger';
 import { parseVideoUrl } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 
@@ -111,8 +112,11 @@ export function VideoPlayer({
         if (typeof data.info === 'number' && data.event !== 'onStateChange') {
           onProgress?.(data.info);
         }
-      } catch (e) {
-        // Игнорируем мусорные сообщения
+      } catch (error) {
+        logger.warn(
+          { err: error },
+          'Непредвиденная ошибка в момент опроса прогресса видео.',
+        );
       }
     };
 

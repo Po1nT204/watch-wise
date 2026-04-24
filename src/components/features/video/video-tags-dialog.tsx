@@ -14,13 +14,14 @@ import { Input } from '@/components/ui/input';
 import { toggleVideoTag, createTag, deleteTag } from '@/server-actions/tags';
 import { Loader2, Plus, Tags, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tag } from '@/shared/types';
 
 interface VideoTagsDialogProps {
   videoId: string;
 
-  currentTags: any[];
+  currentTags: Tag[];
 
-  allTags: any[];
+  allTags: Tag[];
 }
 
 export function VideoTagsDialog({

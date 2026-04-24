@@ -6,9 +6,10 @@ import { CheckCircle2, PlayCircle, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { QuizQuestion } from '@/shared/types';
 
 interface QuizOverlayProps {
-  question: any;
+  question: QuizQuestion;
   onAnswer: (isCorrect: boolean) => void;
 }
 
@@ -27,6 +28,8 @@ export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
     onAnswer(isCorrect);
   };
 
+  const options = question.options as string[];
+
   return (
     <div className='fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300'>
       <Card className='w-full max-w-2xl p-6 md:p-8 shadow-2xl flex flex-col max-h-[90vh] bg-background'>
@@ -42,7 +45,7 @@ export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
 
         <ScrollArea className='flex-1 pr-4 -mr-4 custom-scrollbar'>
           <div className='grid gap-3'>
-            {question.options.map((opt: string, i: number) => {
+            {options.map((opt: string, i: number) => {
               const isCorrect = i === question.correctIdx;
               const isSelected = i === selectedIdx;
 
