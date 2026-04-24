@@ -8,21 +8,18 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, GraduationCap, LibraryBig, Download } from 'lucide-react';
-import { Flashcards } from './flashcards';
-import Markdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
-import { DeleteQuestionButton } from './delete-question-button';
-import { EditQuestionDialog } from './edit-question-dialog';
 import {
-  Flashcard,
-  QuizQuestion,
-  TranscriptChunk,
   VideoWithRelations,
+  QuizQuestion,
+  Flashcard,
+  AnalysisMode,
 } from '@/shared/types';
 import { exportVideoToMarkdown } from '@/lib/export-utils';
-import { parseTimestamp, formatDisplayTime } from '@/lib/time-utils';
+import { SummaryTab } from './tabs/summary-tab';
+import { QuizTab } from './tabs/quiz-tab';
+import { CardsTab } from './tabs/cards-tab';
 
 interface VideoTabsProps {
   video: VideoWithRelations;
@@ -39,9 +36,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
   const flashcards = (content?.flashcards || []) as Flashcard[];
 
   const handleTermClick = (matchedTerm: string) => {
-    const index = flashcards.findIndex(
-      (f: Flashcard) => f.term === matchedTerm,
-    );
+    const index = flashcards.findIndex((f) => f.term === matchedTerm);
     if (index !== -1) {
       setActiveCardIndex(index);
     }
@@ -52,73 +47,6 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
     if (content) {
       exportVideoToMarkdown(video, content, flashcards, questions);
     }
-  };
-
-  const processText = (text: string) => {
-    const parts = text.split(/(\[\d{1,3}:\d{1,2}\]|\[\d+s\])/g);
-
-    return parts.map((part, i) => {
-      if (part.match(/^\[\d{1,3}:\d{1,2}\]$|^\[\d+s\]$/)) {
-        const seconds = parseTimestamp(part);
-        return (
-          <Button
-            key={`ts-${i}`}
-            variant='link'
-            className='h-auto p-0 px-1 text-primary font-mono text-[13px] hover:no-underline hover:text-primary/80 align-baseline'
-            onClick={() => onTimestampClick(seconds)}
-          >
-            {formatDisplayTime(seconds)}
-          </Button>
-        );
-      }
-
-      if (flashcards.length > 0) {
-        const terms = flashcards
-          .map((f: Flashcard) => f.term)
-          .sort((a: string, b: string) => b.length - a.length);
-
-        const escapedTerms = terms.map((t: string) =>
-          t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-        );
-
-        const regex = new RegExp(`(${escapedTerms.join('|')})`, 'gi');
-        const subParts = part.split(regex);
-
-        return subParts.map((subPart, j) => {
-          const matchedTerm = terms.find(
-            (t: string) => t.toLowerCase() === subPart.toLowerCase(),
-          );
-
-          if (matchedTerm) {
-            return (
-              <span
-                key={`term-${i}-${j}`}
-                className='border-b border-dashed border-primary/70 text-primary cursor-pointer hover:bg-primary/10 transition-colors font-semibold'
-                title='Перейти к определению'
-                onClick={() => handleTermClick(matchedTerm)}
-              >
-                {subPart}
-              </span>
-            );
-          }
-          return subPart;
-        });
-      }
-
-      return part;
-    });
-  };
-
-  const processContent = (nodeContent: React.ReactNode): React.ReactNode => {
-    if (typeof nodeContent === 'string') {
-      return processText(nodeContent);
-    }
-    if (Array.isArray(nodeContent)) {
-      return nodeContent.map((child, i) => (
-        <React.Fragment key={i}>{processContent(child)}</React.Fragment>
-      ));
-    }
-    return nodeContent;
   };
 
   return (
@@ -158,7 +86,6 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
                   Сгенерировано YandexGPT
                 </CardDescription>
               </div>
-              {/* Кнопка скачивания MD */}
               {content && (
                 <Button
                   onClick={handleExportMD}
@@ -166,64 +93,18 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
                   size='sm'
                   className='font-semibold shadow-sm h-8'
                 >
-                  <Download className='h-4 w-4 mr-2' />
-                  Markdown
+                  <Download className='h-4 w-4 mr-2' /> Markdown
                 </Button>
               )}
             </CardHeader>
-            <ScrollArea className='flex-1 px-4 min-h-0'>
-              <div className='text-sm space-y-4 pb-4'>
-                {content?.summary ? (
-                  <div className='prose prose-sm dark:prose-invert max-w-none text-foreground leading-relaxed'>
-                    <Markdown
-                      components={{
-                        p: ({ children }) => <p>{processContent(children)}</p>,
-                        li: ({ children }) => (
-                          <li className='ml-4 list-disc'>
-                            {processContent(children)}
-                          </li>
-                        ),
-                        strong: ({ children }) => (
-                          <strong>{processContent(children)}</strong>
-                        ),
-                      }}
-                    >
-                      {content.summary}
-                    </Markdown>
-                  </div>
-                ) : transcript.length > 0 ? (
-                  <div className='space-y-4 text-muted-foreground'>
-                    <p className='text-[10px] font-bold uppercase text-primary tracking-wider'>
-                      {video.status === 'FAILED'
-                        ? 'Анализ прерван ошибкой, но мы сохранили транскрипт:'
-                        : 'Полный транскрипт (анализ не запущен):'}
-                    </p>
-                    {transcript.map((chunk: TranscriptChunk) => (
-                      <div
-                        key={chunk.id}
-                        className='group cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors border-l-2 border-transparent hover:border-primary'
-                        onClick={() => onTimestampClick(chunk.startTime)}
-                      >
-                        <span className='text-[10px] font-mono text-primary font-bold'>
-                          [{Math.floor(chunk.startTime / 60)}:
-                          {Math.floor(chunk.startTime % 60)
-                            .toString()
-                            .padStart(2, '0')}
-                          ]
-                        </span>
-                        <p className='mt-1 text-foreground text-xs leading-snug'>
-                          {chunk.text}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className='italic text-muted-foreground text-center py-10'>
-                    Здесь появится конспект после анализа.
-                  </p>
-                )}
-              </div>
-            </ScrollArea>
+            <SummaryTab
+              summary={content?.summary}
+              transcript={transcript}
+              flashcards={flashcards}
+              videoStatus={video.status}
+              onTimestampClick={onTimestampClick}
+              onTermClick={handleTermClick}
+            />
           </Card>
         </TabsContent>
 
@@ -232,78 +113,11 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
           className='h-full m-0 data-[state=active]:flex flex-col data-[state=inactive]:hidden'
         >
           <Card className='flex-1 flex flex-col border-none shadow-none min-h-0'>
-            <ScrollArea className='flex-1 p-4 min-h-0'>
-              <div className='space-y-4 pb-4'>
-                {questions.length > 0 ? (
-                  questions.map((q: QuizQuestion, idx: number) => (
-                    <Card
-                      key={q.id}
-                      className='p-4 border-muted shadow-none shrink-0 group relative'
-                    >
-                      <div className='flex justify-between items-start gap-4'>
-                        <p className='text-sm font-semibold leading-tight flex-1 mt-1'>
-                          <span className='text-muted-foreground mr-1'>
-                            [{formatDisplayTime(q.timestamp)}]
-                          </span>
-                          {idx + 1}. {q.text}
-                        </p>
-                        {content.mode === 'teacher' && (
-                          <div className='flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-card rounded-md border shadow-sm'>
-                            <EditQuestionDialog
-                              question={q}
-                              videoId={video.id}
-                            />
-                            <DeleteQuestionButton
-                              questionId={q.id}
-                              videoId={video.id}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className='mt-4 grid gap-2'>
-                        {(q.options as string[]).map(
-                          (opt: string, i: number) => (
-                            <div
-                              key={i}
-                              className={`text-[12px] p-2.5 rounded border transition-colors ${
-                                content.mode === 'teacher' && i === q.correctIdx
-                                  ? 'bg-primary/10 border-primary/30 font-medium text-foreground'
-                                  : 'bg-muted/30 text-muted-foreground'
-                              }`}
-                            >
-                              {opt}
-                              {content.mode === 'teacher' &&
-                                i === q.correctIdx && (
-                                  <span className='ml-2 text-[10px] text-primary font-bold uppercase tracking-wider'>
-                                    Правильный ответ
-                                  </span>
-                                )}
-                            </div>
-                          ),
-                        )}
-                      </div>
-
-                      {content.mode === 'teacher' && q.explanation && (
-                        <div className='mt-3 p-3 bg-muted/50 rounded-md border-l-2 border-primary/50 text-xs italic text-muted-foreground'>
-                          <span className='font-semibold text-foreground not-italic mr-1'>
-                            Пояснение:
-                          </span>
-                          {q.explanation}
-                        </div>
-                      )}
-                    </Card>
-                  ))
-                ) : (
-                  <div className='flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground border border-dashed rounded-md text-center p-6'>
-                    <GraduationCap className='h-8 w-8 mb-2 opacity-20' />
-                    <p className='text-sm'>
-                      Тестирование станет доступно после анализа
-                    </p>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
+            <QuizTab
+              questions={questions}
+              mode={(content?.mode as AnalysisMode) || 'student'}
+              videoId={video.id}
+            />
           </Card>
         </TabsContent>
 
@@ -318,23 +132,10 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
                 Основные термины для запоминания
               </CardDescription>
             </CardHeader>
-            <ScrollArea className='flex-1 px-4 min-h-0'>
-              {flashcards.length > 0 ? (
-                <div className='pb-6'>
-                  <Flashcards
-                    cards={flashcards}
-                    activeIndex={activeCardIndex}
-                  />
-                </div>
-              ) : (
-                <div className='flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground border border-dashed rounded-md text-center p-6'>
-                  <LibraryBig className='h-8 w-8 mb-2 opacity-20' />
-                  <p className='text-sm'>
-                    Карточки появятся после анализа видео
-                  </p>
-                </div>
-              )}
-            </ScrollArea>
+            <CardsTab
+              flashcards={flashcards}
+              activeCardIndex={activeCardIndex}
+            />
           </Card>
         </TabsContent>
       </div>
