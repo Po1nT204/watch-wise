@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { VideoPlayer } from './video-player';
 import { VideoTabs } from './video-tabs';
 import { AnalysisControl } from './analysis-control';
@@ -15,7 +15,7 @@ export function VideoViewClient({ video }: { video: VideoWithRelations }) {
   const questions = content?.questions || [];
   const { isPaused, currentQuestion, handleProgress, handleAnswer } =
     useVideoQuiz(questions, content?.id, video.id);
-
+  const handleSeekComplete = useCallback(() => setSeekTo(null), []);
   const { reset } = useVideoStore();
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function VideoViewClient({ video }: { video: VideoWithRelations }) {
             url={video.url}
             cloudUrl={video.cloudUrl}
             seekToTime={seekTo}
-            onSeekComplete={() => setSeekTo(null)}
+            onSeekComplete={handleSeekComplete}
             onProgress={handleProgress}
             isPaused={isPaused}
           />
