@@ -1,5 +1,6 @@
 import { logger } from '@/config/logger';
 import prisma from '@/config/prisma';
+import { APP_CONFIG } from '@/constants/app';
 
 export const getVideosByUserId = async (userId: string) => {
   try {
@@ -127,4 +128,63 @@ export const deleteVideoFromUser = async (videoId: string, userId: string) => {
     );
     throw new Error('Ошибка при удалении данных видео');
   }
+};
+
+export const addVideoToLibrary = async (
+  url: string,
+  platform: 'youtube' | 'vk',
+  externalId: string,
+  userId: string,
+) => {
+  let videoTitle = `${platform.toUpperCase()} Video ${externalId}`;
+  let thumbnail = '';
+
+  if (platform === 'youtube') {
+    thumbnail = `https://img.youtube.com/vi/${externalId}/maxresdefault.jpg`;
+    try {
+      const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${externalId}&format=json`;
+      const response = await fetch(oembedUrl, {
+        signal: AbortSignal.timeout(APP_CONFIG.API.YOUTUBE_FETCH_TIMEOUT),
+      });
+      if (response.ok) {
+        const metadata = await response.json();
+        if (metadata.title) videoTitle = metadata.title;
+      }
+    } catch (error) {
+      logger.warn(
+        { err: error, videoId: externalId },
+        'YouTube oEmbed fetch timed out.',
+      );
+    }
+  }
+
+  // Создаем или обновляем видео в глобальной базе
+  const video = await prisma.video.upsert({
+    where: { url },
+    update: {},
+    create: {
+      url,
+      platform,
+      externalId,
+      thumbnail,
+      title: videoTitle,
+      status: 'PENDING',
+    },
+  });
+
+  // Привязываем видео к конкретному пользователю
+  await prisma.videoProgress.upsert({
+    where: {
+      userId_videoId: { userId, videoId: video.id },
+    },
+    update: { updatedAt: new Date() },
+    create: {
+      userId,
+      videoId: video.id,
+      timestamp: 0,
+      isCompleted: false,
+    },
+  });
+
+  return video.id;
 };
