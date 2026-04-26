@@ -46,7 +46,7 @@ export class YandexCloudService {
     - ${focusPrompt}
     - Сохраняй авторский стиль спикера (если он шутит — оставь легкий тон, если строг — будь формальным).
     - Вставляй в конспект кликабельные ключевые метки времени в формате [...s] (например [164s]) в конце каждого ключевого тезиса или раздела (например, [54s]), основываясь на данных из транскрипта. Оставляй таймкоды в исходном виде [...s], не пытайся переводить их в минуты.
-2. QUESTIONS: Сгенерируй до ${settings.count} вопросов. ВНИМАНИЕ: Если видео короткое и фактов мало, сгенерируй МЕНЬШЕ вопросов, не придумывай то, чего нет в тексте и не говорится в самом видео.
+2. QUESTIONS: Сгенерируй до ${settings.count} вопросов, равномерно распределив по все длине видео. ВНИМАНИЕ: Если видео короткое и фактов мало, сгенерируй МЕНЬШЕ вопросов, не придумывай то, чего нет в тексте и не говорится в самом видео.
    - Сложность "${settings.difficulty}": 
      * 'easy' — вопросы на знание конкретных фактов, четко произнесенных в видео;
      * 'medium' — вопросы на понимание логики и причин;
@@ -85,8 +85,6 @@ export class YandexCloudService {
       );
 
       const signal = AbortSignal.timeout(APP_CONFIG.API.YANDEX_GPT_TIMEOUT);
-
-      // ЗАМЕР ВРЕМЕНИ: Старт
       const startTime = performance.now();
 
       const response = await this.openai.chat.completions.create(
@@ -107,11 +105,8 @@ export class YandexCloudService {
         { signal },
       );
 
-      // ЗАМЕР ВРЕМЕНИ: Финиш
       const endTime = performance.now();
       const latencyMs = Math.round(endTime - startTime);
-
-      // ИЗВЛЕЧЕНИЕ ТОКЕНОВ
       const tokensUsed = response.usage?.total_tokens || 0;
 
       const content = response.choices[0].message.content || '';
@@ -147,7 +142,6 @@ export class YandexCloudService {
 
       logger.info('Learning content successfully generated and validated');
 
-      // Возвращаем данные вместе с собранной телеметрией
       return {
         content: validatedData,
         telemetry: {
