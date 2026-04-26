@@ -1,50 +1,32 @@
 # WatchWise — Interactive AI Video Learning Platform
 
-![Project Status](https://img.shields.io/badge/Status-In%20Development-orange)
+![Project Status](https://img.shields.io/badge/Status-MVP_Ready-green)
+![Refactoring](https://img.shields.io/badge/Stage-Refactoring-orange)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-**WatchWise** — это веб-платформа, которая трансформирует пассивный просмотр образовательных видео (YouTube, VK Video) в активный процесс обучения. Система использует технологии искусственного интеллекта для автоматической генерации конспектов, тестов и флеш-карточек, а также реализует уникальную механику «Умной паузы».
+**WatchWise** — это веб-платформа, которая трансформирует пассивный просмотр образовательных видео (YouTube, VK Video) в активный процесс обучения. Система использует технологии искусственного интеллекта (Yandex Cloud) для автоматической генерации конспектов, тестов и флеш-карточек, а также реализует уникальную механику «Умной паузы».
 
 > Проект разрабатывается в рамках Выпускной Квалификационной Работы (ВКР).
 
 ## 🌟 Основные возможности
 
 - **Мультиплатформенность:** Поддержка видео с YouTube и VK Video.
-- **AI-Генерация контента:**
-  - **Конспект (Summary):** Структурированная выжимка ключевых идей видео.
-  - **Интерактивные тесты:** Вопросы генерируются с привязкой к конкретным моментам видео.
-  - **Флеш-карточки:** Карточки для запоминания терминов и определений.
+- **AI-Генерация контента:** Конспекты, тесты, флеш-карточки и автоматическое тегирование.
 - **Умная пауза (Smart Pause):** Видеоплеер автоматически останавливается в ключевые моменты, предлагая ответить на вопрос по пройденному материалу.
-- **Личный кабинет:** Отслеживание прогресса обучения, история просмотров и статистика успеваемости.
-- **Режимы обучения:** Гибкая настройка генерации (режим студента/преподавателя).
+- **Личный кабинет & Геймификация:** Отслеживание прогресса, накопление XP, уровни и история просмотров.
+- **Редактор преподавателя:** Возможность корректировать сгенерированные тесты.
 
 ## 🛠 Технологический стек
 
-Проект построен на современной модульной архитектуре с использованием Fullstack-возможностей Next.js.
-
-### Frontend & Backend
-
-- **Framework:** [Next.js 15](https://nextjs.org/) (App Router)
-- **Language:** [TypeScript](https://www.typescriptlang.org/)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
-- **State Management:** [Zustand](https://github.com/pmndrs/zustand)
-- **Auth:** [NextAuth.js](https://next-auth.js.org/) (v5)
-
-### Data & Infrastructure
-
-- **Database:** [PostgreSQL](https://www.postgresql.org/)
-- **ORM:** [Prisma](https://www.prisma.io/)
-- **Containerization:** [Docker](https://www.docker.com/) & Docker Compose
-
-### AI & External Services
-
-- **ASR (Speech-to-Text):** [Yandex SpeechKit](https://cloud.yandex.ru/services/speechkit) (для VK Video)
-- **LLM (Text Analysis):** [YandexGPT](https://cloud.yandex.ru/services/yandexgpt) / GigaChat
-- **Storage:** Yandex Object Storage (S3)
+- **Core:** [Next.js 15](https://nextjs.org/) (App Router), TypeScript.
+- **Frontend:** Tailwind CSS, shadcn/ui, Zustand.
+- **Backend & DB:** Server Actions, PostgreSQL, Prisma ORM.
+- **AI & Media Pipeline:** YandexGPT, Yandex SpeechKit, Yandex Object Storage (S3), `ytdlp-nodejs`.
+- **Reliability:** Zod (Validation), Pino (Logging), p-retry (Resilience).
 
 ## 🚀 Запуск проекта локально
 
-Для запуска вам понадобятся установленные **Node.js** (v18+) и **Docker**.
+Для запуска понадобятся **Node.js** (v18+) и **Docker**.
 
 1.  **Клонируйте репозиторий:**
 
@@ -59,8 +41,25 @@
     npm install
     ```
 
-3.  **Настройте переменные окружения:**
-    Создайте файл `.env` в корне проекта на основе `.env.example` и заполните необходимые ключи (Database URL, API Keys).
+3.  **Настройте переменные окружения (.env):**
+    Создайте файл `.env` в корне проекта. Вам понадобятся следующие ключи:
+
+    ```env
+    # Database
+    DATABASE_URL="postgresql://user:password@localhost:5432/watchwise?schema=public"
+
+    # Next Auth
+    AUTH_SECRET="your-super-secret-key"
+    AUTH_GOOGLE_ID="your-google-oauth-id"
+    AUTH_GOOGLE_SECRET="your-google-oauth-secret"
+
+    # Yandex Cloud (AI & S3)
+    YANDEX_API_KEY="your-yandex-api-key"
+    YANDEX_FOLDER_ID="your-yandex-folder-id"
+    YANDEX_STORAGE_ACCESS_KEY="your-s3-access-key"
+    YANDEX_STORAGE_SECRET_KEY="your-s3-secret-key"
+    YANDEX_STORAGE_BUCKET_NAME="your-bucket-name"
+    ```
 
 4.  **Запустите базу данных (через Docker):**
 
@@ -75,10 +74,15 @@
     ```
 
 6.  **Запустите проект:**
-    ```bash
+    `bash
     npm run dev
-    ```
+    `
+    Откройте [http://localhost:3000](http://localhost:3000) в браузере.
 
-Откройте [http://localhost:3000](http://localhost:3000) в браузере.
+## 📂 Документация
 
-## 📂 Структура проекта описана в файле docs/architecture.md
+Подробная техническая документация находится в папке `docs/`:
+
+- `architecture.md` — архитектурные правила и структура.
+- `plan.md` — план разработки и решения проблем.
+- `requirements.md` — функциональные требования.

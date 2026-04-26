@@ -1,4 +1,5 @@
 import { logger } from '@/config/logger';
+import { APP_CONFIG } from '@/constants/app';
 import axios from 'axios';
 import pRetry from 'p-retry';
 
@@ -57,7 +58,9 @@ export class SpeechKitService {
   ): Promise<T> {
     return pRetry(
       async () => {
-        const signal = AbortSignal.timeout(15000);
+        const signal = AbortSignal.timeout(
+          APP_CONFIG.API.SPEECHKIT_FETCH_TIMEOUT,
+        );
         return await requestFn(signal);
       },
       {
@@ -134,7 +137,7 @@ export class SpeechKitService {
           Authorization: `Api-Key ${apiKey}`,
           'x-folder-id': this.getFolderId(),
         },
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(APP_CONFIG.API.SPEECHKIT_POLLING_INTERVAL),
       },
     );
 

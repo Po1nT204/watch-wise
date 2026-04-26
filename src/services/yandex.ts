@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { AIGeneratedContentSchema } from '@/shared/schemas';
 import { logger } from '@/config/logger';
 import pRetry from 'p-retry';
+import { APP_CONFIG } from '@/constants/app';
 
 export class YandexCloudService {
   private static apiKey = process.env.YANDEX_API_KEY;
@@ -83,7 +84,7 @@ export class YandexCloudService {
         'Requesting YandexGPT for learning content',
       );
 
-      const signal = AbortSignal.timeout(45000);
+      const signal = AbortSignal.timeout(APP_CONFIG.API.YANDEX_GPT_TIMEOUT);
 
       // ЗАМЕР ВРЕМЕНИ: Старт
       const startTime = performance.now();
