@@ -5,8 +5,8 @@ export const APP_CONFIG = {
     XP_PER_LEVEL: 100,
   },
   QUIZ: {
-    TIME_WINDOW_START: 7,
-    TIME_WINDOW_END: 9,
+    TIME_WINDOW_START: 9,
+    TIME_WINDOW_END: 11,
   },
   API: {
     YANDEX_GPT_TIMEOUT: 45000,
