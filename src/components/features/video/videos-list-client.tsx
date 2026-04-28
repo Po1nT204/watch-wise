@@ -11,12 +11,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { VideoIcon, Search } from 'lucide-react';
-import { Tag, VideoWithRelations } from '@/shared/types';
+import { Tag, VideoForList } from '@/shared/types';
 import { useVideoFilter } from '@/hooks/useVideoFilter';
 import { VideoCard } from './video-card';
 
 interface VideosListClientProps {
-  videos: VideoWithRelations[];
+  videos: VideoForList[];
   allTags: Tag[];
 }
 

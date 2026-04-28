@@ -71,6 +71,7 @@ export const getVideoById = async (videoId: string, userId: string) => {
       include: {
         progress: {
           where: { userId },
+          include: { tags: true },
           take: 1,
         },
         // Подтягиваем сгенерированный контент для этого юзера
@@ -141,6 +142,7 @@ export const addVideoToLibrary = async (
 
   if (platform === 'youtube') {
     thumbnail = `https://img.youtube.com/vi/${externalId}/maxresdefault.jpg`;
+
     try {
       const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${externalId}&format=json`;
       const response = await fetch(oembedUrl, {

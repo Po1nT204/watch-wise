@@ -38,7 +38,6 @@ export const LoginForm = () => {
 
     startTransition(() => {
       loginUser(values).then((data) => {
-        // Если вернулся объект с ошибкой (редирект в auth.ts выбрасывает исключение, которое не попадает сюда в success кейс)
         if (data?.error) {
           setError(data.error);
         }

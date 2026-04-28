@@ -12,7 +12,6 @@ interface HeaderProps {
 }
 
 export const Header = async ({ user }: HeaderProps) => {
-  // Получаем свежие данные по геймификации из БД
   let stats = { level: 1, streak: 0 };
   if (user.id) {
     const dbUser = await prisma.user.findUnique({
@@ -29,7 +28,6 @@ export const Header = async ({ user }: HeaderProps) => {
       </div>
 
       <div className='ml-auto flex items-center gap-4'>
-        {/* Индикатор Стрика */}
         <div
           className='flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 text-orange-600 border border-orange-500/20'
           title='Дней обучения подряд'
@@ -40,7 +38,6 @@ export const Header = async ({ user }: HeaderProps) => {
           <span className='text-sm font-bold'>{stats.streak}</span>
         </div>
 
-        {/* Передаем данные пользователя и его уровень */}
         <UserNav user={user} level={stats.level} />
       </div>
     </>

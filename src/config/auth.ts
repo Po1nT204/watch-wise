@@ -7,7 +7,7 @@ import { authConfig } from '@/config/auth.config';
 import { SignInSchema } from '@/shared/schemas';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  ...authConfig, // Подключаем легкий конфиг
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
   session: { strategy: 'jwt' },
   providers: [
@@ -39,7 +39,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   events: {
-    // Это событие поможет нам, если мы захотим что-то сделать при создании линка аккаунта
     async linkAccount({ user }) {
       await prisma.user.update({
         where: { id: user.id },

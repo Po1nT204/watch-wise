@@ -38,6 +38,12 @@ export type VideoWithRelations = Prisma.VideoGetPayload<{
   };
 }>;
 
+export type VideoForList = Prisma.VideoGetPayload<{
+  include: {
+    progress: { include: { tags: true } };
+  };
+}>;
+
 export type GlobalFlashcard = Prisma.FlashcardGetPayload<{
   include: {
     content: {

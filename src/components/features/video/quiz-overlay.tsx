@@ -33,7 +33,6 @@ export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
   return (
     <div className='fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300'>
       <Card className='w-full max-w-2xl p-6 md:p-8 shadow-2xl flex flex-col max-h-[90vh] bg-background'>
-        {/* Заголовок вопроса */}
         <div className='mb-6 shrink-0'>
           <div className='inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-4 border border-primary/20'>
             Умная пауза
@@ -54,7 +53,6 @@ export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
                   key={i}
                   variant='outline'
                   className={cn(
-                    // ИСПРАВЛЕНИЕ: Уменьшили шрифт до text-sm (было text-base), убрали лишние padding
                     'h-auto py-3 px-4 justify-start text-left whitespace-normal transition-all text-sm',
                     isSubmitted &&
                       isCorrect &&
@@ -70,7 +68,6 @@ export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
                   disabled={isSubmitted}
                 >
                   <div className='flex items-center gap-3 w-full'>
-                    {/* Визуальный индикатор выбора */}
                     <div className='shrink-0'>
                       {isSubmitted && isCorrect ? (
                         <CheckCircle2 className='h-5 w-5 text-emerald-500' />
@@ -89,7 +86,6 @@ export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
             })}
           </div>
 
-          {/* Блок с пояснением */}
           {isSubmitted && (
             <div className='mt-5 animate-in slide-in-from-bottom-4 fade-in duration-500'>
               {question.explanation && (

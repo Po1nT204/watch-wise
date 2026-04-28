@@ -18,14 +18,12 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AddVideoDialogProps {
-  children: React.ReactNode; // Кнопка, по которой кликаем
+  children: React.ReactNode;
 }
 
 export function AddVideoDialog({ children }: AddVideoDialogProps) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // useTransition позволяет отслеживать статус выполнения Server Action
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = async (formData: FormData) => {

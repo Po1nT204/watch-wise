@@ -13,21 +13,19 @@ interface Flashcard {
   definition: string;
 }
 
-export function Flashcards({ 
-  cards, 
-  activeIndex = 0 
-}: { 
+export function Flashcards({
+  cards,
+  activeIndex = 0,
+}: {
   cards: Flashcard[];
   activeIndex?: number;
 }) {
   const [currentIndex, setCurrentIndex] = useState(activeIndex);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  // Синхронизируем внешний клик из текста с внутренним индексом карточки
   useEffect(() => {
     setCurrentIndex(activeIndex);
-    // Отличный UX: если перешли по клику из текста - сразу показываем определение
-    setIsFlipped(true); 
+    setIsFlipped(true);
   }, [activeIndex]);
 
   if (!cards.length) return null;

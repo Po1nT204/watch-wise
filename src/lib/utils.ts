@@ -19,7 +19,6 @@ export function getYoutubeThumbnail(videoId: string): string {
 export function parseVideoUrl(
   url: string,
 ): { id: string; platform: 'youtube' | 'vk' } | null {
-  // YouTube
   const ytMatch = url.match(
     /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/,
   );
@@ -27,8 +26,6 @@ export function parseVideoUrl(
     return { id: ytMatch[2], platform: 'youtube' };
   }
 
-  // VK Video (поддержка форматов video-ID_ID или просто ID_ID)
-  // Примеры: vkvideo.ru/video-175987163_456308875
   const vkMatch = url.match(/video(-?\d+_\d+)/);
   if (vkMatch) {
     return { id: vkMatch[1], platform: 'vk' };
