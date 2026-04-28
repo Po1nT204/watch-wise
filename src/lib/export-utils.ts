@@ -37,14 +37,11 @@ export const exportVideoToMarkdown = (
     });
   }
 
-  // Создаем Blob (виртуальный файл в памяти браузера)
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
 
-  // Программный клик для скачивания
   const a = document.createElement('a');
   a.href = url;
-  // Чистим имя файла от спецсимволов
   const safeTitle = (video.title || 'Lesson')
     .substring(0, 30)
     .replace(/[^a-zа-я0-9]/gi, '_');

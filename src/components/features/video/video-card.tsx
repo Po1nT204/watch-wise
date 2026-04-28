@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { PlayCircle, ExternalLink } from 'lucide-react';
 import { DeleteVideoButton } from './delete-video-button';
 import { VideoTagsDialog } from './video-tags-dialog';
-import { Tag, VideoWithRelations } from '@/shared/types';
+import { Tag, VideoForList } from '@/shared/types';
 
 interface VideoCardProps {
-  video: VideoWithRelations;
+  video: VideoForList;
   allTags: Tag[];
 }
 

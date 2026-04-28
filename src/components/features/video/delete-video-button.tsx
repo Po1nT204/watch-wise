@@ -9,7 +9,7 @@ export function DeleteVideoButton({ videoId }: { videoId: string }) {
   const [isPending, startTransition] = useTransition();
 
   const onDelete = (e: React.MouseEvent) => {
-    e.preventDefault(); // Чтобы не сработал переход по ссылке, если кнопка внутри Link
+    e.preventDefault();
 
     if (
       confirm(

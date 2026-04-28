@@ -37,8 +37,6 @@ export default async function DashboardPage() {
   });
 
   const recentVideos = allVideos.slice(0, 3);
-
-  // Расчеты для прогресс-бара
   const currentXp = dbUser?.xp || 0;
   const currentLevel = dbUser?.level || 1;
   const xpInCurrentLevel = currentXp % 100;

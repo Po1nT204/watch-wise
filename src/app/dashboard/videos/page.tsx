@@ -11,7 +11,6 @@ export default async function VideosLibraryPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
 
-  // Загружаем видео и глобальные теги пользователя параллельно
   const [videos, tagsResponse] = await Promise.all([
     getVideosByUserId(session.user.id),
     getUserTags(),
@@ -39,7 +38,6 @@ export default async function VideosLibraryPage() {
         </AddVideoDialog>
       </div>
 
-      {/* Передаем данные в клиентский компонент для реактивной фильтрации */}
       <VideosListClient videos={videos} allTags={allTags} />
     </div>
   );

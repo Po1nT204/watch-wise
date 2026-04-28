@@ -51,7 +51,6 @@ export function VideoTagsDialog({
       if (result.error) {
         toast.error(result.error);
       } else if (result.tag) {
-        // Сразу привязываем только что созданный тег к этому видео
         await toggleVideoTag(videoId, result.tag.id, true);
         setNewTagName('');
         toast.success('Тег создан и привязан');

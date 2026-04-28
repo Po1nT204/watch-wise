@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Tag, VideoWithRelations } from '@/shared/types';
+import { Tag, VideoForList } from '@/shared/types';
 
-export function useVideoFilter(videos: VideoWithRelations[]) {
+export function useVideoFilter(videos: VideoForList[]) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPlatform, setFilterPlatform] = useState('all');
   const [filterTag, setFilterTag] = useState('all');
