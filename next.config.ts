@@ -5,7 +5,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'lh3.googleusercontent.com', // Домен аватарок Google
+        hostname: 'lh3.googleusercontent.com', // Для Google
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com', // Для GitHub
       },
     ],
   },

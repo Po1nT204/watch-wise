@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { RegisterSchema } from '@/shared/schemas';
 import { registerUser } from '@/server-actions/auth';
+import { signIn } from 'next-auth/react';
+import { GithubIcon, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -120,7 +122,11 @@ export const RegisterForm = () => {
               </div>
             )}
             <Button type='submit' className='w-full' disabled={isPending}>
-              Создать аккаунт
+              {isPending ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                'Создать аккаунт'
+              )}
             </Button>
           </form>
         </Form>
@@ -129,6 +135,26 @@ export const RegisterForm = () => {
             Уже есть аккаунт? Войти
           </Link>
         </div>
+        <div className='relative my-4'>
+          <div className='absolute inset-0 flex items-center'>
+            <span className='w-full border-t' />
+          </div>
+          <div className='relative flex justify-center text-xs uppercase'>
+            <span className='bg-background px-2 text-muted-foreground'>
+              Или регистрация через
+            </span>
+          </div>
+        </div>
+
+        <Button
+          variant='outline'
+          type='button'
+          className='w-full font-semibold'
+          onClick={() => signIn('github', { callbackUrl: '/dashboard' })}
+        >
+          <GithubIcon className='mr-2 h-4 w-4' />
+          GitHub
+        </Button>
       </CardContent>
     </Card>
   );
