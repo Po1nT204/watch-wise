@@ -18,14 +18,14 @@ const mockQuestions = [
   {
     id: 'q1',
     text: 'Вопрос 1',
-    timestamp: 10,
+    timestamp: 1,
     options: ['А', 'Б'],
     correctIdx: 0,
   },
   {
     id: 'q2',
     text: 'Вопрос 2',
-    timestamp: 20,
+    timestamp: 11,
     options: ['В', 'Г'],
     correctIdx: 1,
   },
@@ -41,7 +41,6 @@ describe('useVideoQuiz Hook', () => {
     const { result } = renderHook(() =>
       useVideoQuiz(mockQuestions, 'content-1', 'video-1'),
     );
-
     expect(result.current.isPaused).toBe(false);
 
     act(() => {
@@ -56,7 +55,6 @@ describe('useVideoQuiz Hook', () => {
     const { result } = renderHook(() =>
       useVideoQuiz(mockQuestions, 'content-1', 'video-1'),
     );
-
     act(() => result.current.handleProgress(10));
 
     await act(async () => {

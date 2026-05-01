@@ -20,12 +20,18 @@ describe('export-utils: exportVideoToMarkdown', () => {
       { text: 'Вопрос 1', options: ['A', 'B'], correctIdx: 0 },
     ] as QuizQuestion[];
 
-    const createElementSpy = vi.spyOn(document, 'createElement');
-    const appendChildSpy = vi.spyOn(document.body, 'appendChild');
-    const removeChildSpy = vi.spyOn(document.body, 'removeChild');
+    const mockAnchor = document.createElement('a');
+    mockAnchor.click = vi.fn();
 
-    const mockAnchor = { href: '', download: '', click: vi.fn() };
-    createElementSpy.mockReturnValue(mockAnchor as any);
+    const createElementSpy = vi
+      .spyOn(document, 'createElement')
+      .mockReturnValue(mockAnchor);
+    const appendChildSpy = vi
+      .spyOn(document.body, 'appendChild')
+      .mockImplementation((node) => node);
+    const removeChildSpy = vi
+      .spyOn(document.body, 'removeChild')
+      .mockImplementation((node) => node);
 
     exportVideoToMarkdown(
       mockVideo,
@@ -35,13 +41,11 @@ describe('export-utils: exportVideoToMarkdown', () => {
     );
 
     expect(global.URL.createObjectURL).toHaveBeenCalled();
-
     expect(createElementSpy).toHaveBeenCalledWith('a');
     expect(mockAnchor.download).toBe('WatchWise_Test_Video.md');
-
-    expect(appendChildSpy).toHaveBeenCalled();
+    expect(appendChildSpy).toHaveBeenCalledWith(mockAnchor);
     expect(mockAnchor.click).toHaveBeenCalled();
-    expect(removeChildSpy).toHaveBeenCalled();
+    expect(removeChildSpy).toHaveBeenCalledWith(mockAnchor);
   });
 
   it('не должен ничего делать, если content отсутствует', () => {
