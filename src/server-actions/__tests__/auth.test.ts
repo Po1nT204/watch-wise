@@ -3,7 +3,17 @@ import { registerUser, loginUser } from '@/server-actions/auth';
 import prisma from '@/config/prisma';
 import bcrypt from 'bcryptjs';
 import { signIn } from '@/config/auth';
-import { AuthError } from 'next-auth';
+
+vi.mock('next-auth', () => ({
+  AuthError: class extends Error {
+    type: string;
+    constructor(type: string) {
+      super(type);
+      this.type = type;
+      this.name = 'AuthError';
+    }
+  },
+}));
 
 vi.mock('@/config/prisma', () => ({
   default: {
@@ -86,8 +96,9 @@ describe('Server Actions: Auth', () => {
     });
 
     it('должен перехватывать и обрабатывать ошибку неверных учетных данных', async () => {
+      const { AuthError } = await import('next-auth');
       const mockError = new AuthError('CredentialsSignin');
-      mockError.type = 'CredentialsSignin';
+
       vi.mocked(signIn).mockRejectedValue(mockError);
 
       const result = await loginUser({
