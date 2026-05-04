@@ -64,3 +64,9 @@ export interface AnalysisSettings {
   audience: AnalysisAudience;
   focus: AnalysisFocus;
 }
+
+export type DeepPartial<T> = T extends object
+  ? {
+      [P in keyof T]?: DeepPartial<T[P]>;
+    }
+  : T;

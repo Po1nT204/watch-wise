@@ -26,7 +26,11 @@ describe('YoutubeService', () => {
       { offset: 4000, duration: 1000, text: 'Вторая фраза' },
     ];
     vi.mocked(YoutubeTranscript.fetchTranscript).mockResolvedValue(
-      mockTranscript as any,
+      mockTranscript as unknown as {
+        offset: number;
+        duration: number;
+        text: string;
+      }[],
     );
 
     const resultText = await YoutubeService.fetchAndSaveTranscript(

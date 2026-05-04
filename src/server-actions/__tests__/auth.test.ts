@@ -3,6 +3,7 @@ import { registerUser, loginUser } from '@/server-actions/auth';
 import prisma from '@/config/prisma';
 import bcrypt from 'bcryptjs';
 import { signIn } from '@/config/auth';
+import { User } from '@prisma/client';
 
 vi.mock('next-auth', () => ({
   AuthError: class extends Error {
@@ -53,7 +54,7 @@ describe('Server Actions: Auth', () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: '1',
         email: 'test@test.ru',
-      } as any);
+      } as User);
 
       const result = await registerUser({
         name: 'Ivan',
@@ -66,7 +67,7 @@ describe('Server Actions: Auth', () => {
     it('должен успешно создавать пользователя с хэшированным паролем', async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
       vi.mocked(bcrypt.hash).mockResolvedValue('hashed_pw_123' as never);
-      vi.mocked(prisma.user.create).mockResolvedValue({ id: '1' } as any);
+      vi.mocked(prisma.user.create).mockResolvedValue({ id: '1' } as User);
 
       const result = await registerUser({
         name: 'Ivan',

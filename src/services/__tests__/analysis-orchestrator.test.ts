@@ -6,6 +6,8 @@ import { VideoDownloader } from '@/services/video-downloader';
 import { S3Service } from '@/services/s3';
 import { SpeechKitService } from '@/services/speechkit';
 import prisma from '@/config/prisma';
+import { Video } from '@prisma/client';
+import { TranscriptChunk } from '@/shared/types';
 
 vi.mock('@/constants/app', () => ({
   APP_CONFIG: {
@@ -69,7 +71,7 @@ describe('AnalysisOrchestrator', () => {
     questionsCount: 5,
     audience: 'student',
     focus: 'theory',
-  } as any;
+  } as const;
 
   it('должен корректно обрабатывать YouTube видео с нативными субтитрами', async () => {
     vi.mocked(prisma.video.findUnique).mockResolvedValue({
@@ -77,7 +79,7 @@ describe('AnalysisOrchestrator', () => {
       url: 'https://youtube.com',
       platform: 'youtube',
       transcriptChunks: [],
-    } as any);
+    } as unknown as Video & { transcriptChunks: TranscriptChunk[] });
 
     vi.mocked(YoutubeService.fetchAndSaveTranscript).mockResolvedValue(
       '[0s] Привет мир',
@@ -111,7 +113,7 @@ describe('AnalysisOrchestrator', () => {
       url: 'https://vk.com/video',
       platform: 'vk',
       transcriptChunks: [],
-    } as any);
+    } as unknown as Video & { transcriptChunks: TranscriptChunk[] });
 
     vi.mocked(VideoDownloader.extractAudio).mockResolvedValue('local.mp3');
     vi.mocked(VideoDownloader.extractVideo).mockResolvedValue('local.mp4');
@@ -121,13 +123,13 @@ describe('AnalysisOrchestrator', () => {
     vi.mocked(SpeechKitService.createTask).mockResolvedValue('task-123');
     vi.mocked(SpeechKitService.getTaskStatus).mockResolvedValue({
       done: true,
-    } as any);
+    } as never);
     vi.mocked(SpeechKitService.getRecognitionResult).mockResolvedValue(
-      {} as any,
+      {} as never,
     );
     vi.mocked(SpeechKitService.parseV3Response).mockReturnValue([
       { startTime: 0, endTime: 1, text: 'Текст ВК' },
-    ] as any);
+    ]);
 
     vi.mocked(YandexCloudService.generateLearningContent).mockResolvedValue({
       content: { summary: 'Саммари', questions: [], flashcards: [], tags: [] },
@@ -152,7 +154,7 @@ describe('AnalysisOrchestrator', () => {
       url: 'https://youtube.com',
       platform: 'youtube',
       transcriptChunks: [],
-    } as any);
+    } as unknown as Video & { transcriptChunks: TranscriptChunk[] });
 
     vi.mocked(YoutubeService.fetchAndSaveTranscript).mockResolvedValue('Текст');
     vi.mocked(YandexCloudService.generateLearningContent).mockRejectedValue(

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { createTag } from '@/server-actions/tags';
 import prisma from '@/config/prisma';
 import { auth } from '@/config/auth';
@@ -30,21 +30,25 @@ describe('Server Actions: createTag', () => {
   });
 
   it('должен отклонять запрос, если пользователь не авторизован', async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    (auth as Mock).mockResolvedValue(null);
 
     const result = await createTag('Новый тег');
     expect(result.error).toBe('Не авторизован');
   });
 
   it('должен возвращать ошибку при пустом имени тега', async () => {
-    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any);
+    vi.mocked(auth).mockResolvedValue({
+      user: { id: 'user-1' },
+    } as never);
 
     const result = await createTag('   ');
     expect(result.error).toBe('Имя тега не может быть пустым');
   });
 
   it('должен успешно создавать тег и отсекать лишние пробелы (trim)', async () => {
-    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any);
+    vi.mocked(auth).mockResolvedValue({
+      user: { id: 'user-1' },
+    } as never);
     const mockTag = {
       id: 'tag-1',
       name: 'Физика',

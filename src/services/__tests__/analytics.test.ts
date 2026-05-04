@@ -22,7 +22,7 @@ describe('Analytics Service', () => {
     vi.mocked(prisma.testResult.aggregate).mockResolvedValue({
       _count: { id: 5 },
       _sum: { score: 50, total: 50 },
-    } as any);
+    } as never);
 
     vi.mocked(prisma.flashcard.count).mockResolvedValue(15);
 
@@ -37,7 +37,7 @@ describe('Analytics Service', () => {
     vi.mocked(prisma.testResult.aggregate).mockResolvedValue({
       _count: { id: 0 },
       _sum: { score: null, total: null },
-    } as any);
+    } as never);
 
     vi.mocked(prisma.flashcard.count).mockResolvedValue(0);
 
@@ -52,7 +52,7 @@ describe('Analytics Service', () => {
     vi.mocked(prisma.testResult.aggregate).mockResolvedValue({
       _count: { id: 2 },
       _sum: { score: 7, total: 10 },
-    } as any);
+    } as never);
     vi.mocked(prisma.flashcard.count).mockResolvedValue(2);
 
     const stats = await getUserDashboardStats('user-2');

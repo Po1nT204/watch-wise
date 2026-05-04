@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { updateQuizQuestion, deleteQuizQuestion } from '@/server-actions/quiz';
+import { updateQuizQuestion } from '@/server-actions/quiz';
 import prisma from '@/config/prisma';
 import { auth } from '@/config/auth';
+import { QuizQuestion } from '@/shared/types';
 
 vi.mock('@/config/prisma', () => ({
   default: {
@@ -22,14 +23,15 @@ describe('Server Actions: Quiz', () => {
 
   describe('updateQuizQuestion', () => {
     it('должен запрещать редактирование, если вопрос принадлежит другому юзеру', async () => {
-      // Имитируем авторизацию пользователя 'user-1'
-      vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any);
+      vi.mocked(auth).mockResolvedValue({
+        user: { id: 'user-1' },
+      } as never);
 
       // В базе вопрос принадлежит 'user-2'
       vi.mocked(prisma.quizQuestion.findUnique).mockResolvedValue({
         id: 'q-1',
         content: { userId: 'user-2' }, // ЧУЖОЙ КОНТЕНТ
-      } as any);
+      } as unknown as QuizQuestion & { content: { userId: string } });
 
       const result = await updateQuizQuestion({
         id: 'q-1',
@@ -45,12 +47,16 @@ describe('Server Actions: Quiz', () => {
     });
 
     it('должен разрешать редактирование владельцу', async () => {
-      vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any);
+      vi.mocked(auth).mockResolvedValue({
+        user: { id: 'user-1' },
+      } as never);
       vi.mocked(prisma.quizQuestion.findUnique).mockResolvedValue({
         id: 'q-1',
         content: { userId: 'user-1' }, // СВОЙ КОНТЕНТ
-      } as any);
-      vi.mocked(prisma.quizQuestion.update).mockResolvedValue({} as any);
+      } as unknown as QuizQuestion & { content: { userId: string } });
+      vi.mocked(prisma.quizQuestion.update).mockResolvedValue(
+        {} as QuizQuestion,
+      );
 
       const result = await updateQuizQuestion({
         id: 'q-1',

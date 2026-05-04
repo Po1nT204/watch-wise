@@ -12,7 +12,9 @@ describe('export-utils: exportVideoToMarkdown', () => {
 
   it('должен генерировать markdown и триггерить скачивание', () => {
     const mockVideo = { title: 'Test Video' } as VideoWithRelations;
-    const mockContent = { summary: 'Тестовое саммари' } as any;
+    const mockContent = { summary: 'Тестовое саммари' } as NonNullable<
+      VideoWithRelations['generatedContents']
+    >[0];
     const mockFlashcards = [
       { term: 'Термин', definition: 'Определение' },
     ] as Flashcard[];
@@ -50,7 +52,14 @@ describe('export-utils: exportVideoToMarkdown', () => {
 
   it('не должен ничего делать, если content отсутствует', () => {
     const createElementSpy = vi.spyOn(document, 'createElement');
-    exportVideoToMarkdown({} as VideoWithRelations, undefined as any, [], []);
+    exportVideoToMarkdown(
+      {} as VideoWithRelations,
+      null as unknown as NonNullable<
+        VideoWithRelations['generatedContents']
+      >[0],
+      [],
+      [],
+    );
     expect(createElementSpy).not.toHaveBeenCalled();
   });
 });
