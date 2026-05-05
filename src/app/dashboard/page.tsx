@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { getUserDashboardStats } from '@/services/analytics';
 import prisma from '@/config/prisma';
+import { OverviewCharts } from '@/components/features/dashboard/overview-charts';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -138,6 +139,8 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <OverviewCharts accuracy={stats.accuracy} />
 
       {/* --- ПОСЛЕДНИЕ ВИДЕО --- */}
       <div className='grid gap-4 md:gap-8'>
