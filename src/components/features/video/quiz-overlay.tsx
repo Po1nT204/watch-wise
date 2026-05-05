@@ -7,6 +7,9 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { QuizQuestion } from '@/shared/types';
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
+import { motion } from 'framer-motion';
 
 interface QuizOverlayProps {
   question: QuizQuestion;
@@ -16,6 +19,7 @@ interface QuizOverlayProps {
 export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const { width, height } = useWindowSize();
 
   const handleCheck = (idx: number) => {
     if (isSubmitted) return;
@@ -23,94 +27,144 @@ export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
     setIsSubmitted(true);
   };
 
+  const isCorrectAnswer = selectedIdx === question.correctIdx;
+
   const handleContinue = () => {
-    const isCorrect = selectedIdx === question.correctIdx;
-    onAnswer(isCorrect);
+    onAnswer(isCorrectAnswer);
   };
 
   const options = question.options as string[];
 
   return (
     <div className='fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300'>
-      <Card className='w-full max-w-2xl p-6 md:p-8 shadow-2xl flex flex-col max-h-[90vh] bg-background'>
-        <div className='mb-6 shrink-0'>
-          <div className='inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-4 border border-primary/20'>
-            Умная пауза
+      {isSubmitted && isCorrectAnswer && (
+        <Confetti
+          width={width}
+          height={height}
+          recycle={false}
+          numberOfPieces={400}
+          gravity={0.15}
+        />
+      )}
+
+      <motion.div
+        initial={{ scale: 0.9, y: 20, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        transition={{ type: 'spring', bounce: 0.4 }}
+        className='w-full max-w-2xl'
+      >
+        <Card className='w-full p-6 md:p-8 shadow-2xl flex flex-col max-h-[90vh] bg-background relative overflow-hidden'>
+          {isSubmitted && (
+            <div
+              className={cn(
+                'absolute inset-0 opacity-5 pointer-events-none transition-colors duration-1000',
+                isCorrectAnswer ? 'bg-emerald-500' : 'bg-destructive',
+              )}
+            />
+          )}
+
+          <div className='mb-6 shrink-0 relative z-10'>
+            <div className='inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-4 border border-primary/20'>
+              Умная пауза
+            </div>
+            <h3 className='text-xl md:text-2xl font-bold leading-snug'>
+              {question.text}
+            </h3>
           </div>
-          <h3 className='text-xl md:text-2xl font-bold leading-snug'>
-            {question.text}
-          </h3>
-        </div>
 
-        <ScrollArea className='flex-1 pr-4 -mr-4 custom-scrollbar'>
-          <div className='grid gap-3'>
-            {options.map((opt: string, i: number) => {
-              const isCorrect = i === question.correctIdx;
-              const isSelected = i === selectedIdx;
+          <ScrollArea className='flex-1 pr-4 -mr-4 custom-scrollbar relative z-10'>
+            <div className='grid gap-3'>
+              {options.map((opt: string, i: number) => {
+                const isCorrect = i === question.correctIdx;
+                const isSelected = i === selectedIdx;
 
-              return (
-                <Button
-                  key={i}
-                  variant='outline'
-                  className={cn(
-                    'h-auto py-3 px-4 justify-start text-left whitespace-normal transition-all text-sm',
-                    isSubmitted &&
-                      isCorrect &&
-                      'border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/10 opacity-100 ring-1 ring-emerald-500',
-                    isSubmitted &&
-                      isSelected &&
-                      !isCorrect &&
-                      'border-destructive bg-destructive/10 hover:bg-destructive/10 opacity-100 ring-1 ring-destructive',
-                    isSubmitted && !isCorrect && !isSelected && 'opacity-40',
-                    !isSubmitted && 'hover:border-primary/50 hover:bg-muted',
-                  )}
-                  onClick={() => handleCheck(i)}
-                  disabled={isSubmitted}
-                >
-                  <div className='flex items-center gap-3 w-full'>
-                    <div className='shrink-0'>
-                      {isSubmitted && isCorrect ? (
-                        <CheckCircle2 className='h-5 w-5 text-emerald-500' />
-                      ) : isSubmitted && isSelected && !isCorrect ? (
-                        <XCircle className='h-5 w-5 text-destructive' />
-                      ) : (
-                        <div className='h-5 w-5 rounded-full border-2 border-muted-foreground/30' />
-                      )}
+                return (
+                  <Button
+                    key={i}
+                    variant='outline'
+                    className={cn(
+                      'h-auto py-3 px-4 justify-start text-left whitespace-normal transition-all text-sm',
+                      isSubmitted &&
+                        isCorrect &&
+                        'border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/10 opacity-100 ring-1 ring-emerald-500 transform scale-[1.02]',
+                      isSubmitted &&
+                        isSelected &&
+                        !isCorrect &&
+                        'border-destructive bg-destructive/10 hover:bg-destructive/10 opacity-100 ring-1 ring-destructive',
+                      isSubmitted &&
+                        !isCorrect &&
+                        !isSelected &&
+                        'opacity-40 grayscale',
+                      !isSubmitted &&
+                        'hover:border-primary/50 hover:bg-muted hover:translate-x-1',
+                    )}
+                    onClick={() => handleCheck(i)}
+                    disabled={isSubmitted}
+                  >
+                    <div className='flex items-center gap-3 w-full'>
+                      <div className='shrink-0'>
+                        {isSubmitted && isCorrect ? (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                          >
+                            <CheckCircle2 className='h-5 w-5 text-emerald-500' />
+                          </motion.div>
+                        ) : isSubmitted && isSelected && !isCorrect ? (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                          >
+                            <XCircle className='h-5 w-5 text-destructive' />
+                          </motion.div>
+                        ) : (
+                          <div className='h-5 w-5 rounded-full border-2 border-muted-foreground/30' />
+                        )}
+                      </div>
+                      <span className='flex-1 font-medium leading-tight'>
+                        {opt}
+                      </span>
                     </div>
-                    <span className='flex-1 font-medium leading-tight'>
-                      {opt}
+                  </Button>
+                );
+              })}
+            </div>
+
+            {isSubmitted && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className='mt-5'
+              >
+                {question.explanation && (
+                  <div className='p-4 bg-muted/50 rounded-xl border-l-4 border-primary text-sm mb-5 shadow-inner'>
+                    <span className='font-black block mb-1 uppercase tracking-wider text-[10px] text-primary'>
+                      🧠 Пояснение ИИ:
+                    </span>
+                    <span className='text-muted-foreground leading-snug'>
+                      {question.explanation}
                     </span>
                   </div>
+                )}
+
+                <Button
+                  onClick={handleContinue}
+                  className={cn(
+                    'w-full font-bold shadow-lg mt-2 mb-2',
+                    isCorrectAnswer
+                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                      : 'bg-primary',
+                  )}
+                  size='lg'
+                >
+                  <PlayCircle className='mr-2 h-5 w-5' />
+                  Продолжить просмотр
                 </Button>
-              );
-            })}
-          </div>
-
-          {isSubmitted && (
-            <div className='mt-5 animate-in slide-in-from-bottom-4 fade-in duration-500'>
-              {question.explanation && (
-                <div className='p-3 bg-muted/50 rounded-lg border-l-4 border-primary text-sm mb-5'>
-                  <span className='font-black block mb-1 uppercase tracking-wider text-[10px] text-primary'>
-                    Пояснение ИИ:
-                  </span>
-                  <span className='text-muted-foreground leading-snug'>
-                    {question.explanation}
-                  </span>
-                </div>
-              )}
-
-              <Button
-                onClick={handleContinue}
-                className='w-full font-bold shadow-md shadow-primary/20 mt-2 mb-2'
-                size='lg'
-              >
-                <PlayCircle className='mr-2 h-5 w-5' />
-                Продолжить просмотр
-              </Button>
-            </div>
-          )}
-        </ScrollArea>
-      </Card>
+              </motion.div>
+            )}
+          </ScrollArea>
+        </Card>
+      </motion.div>
     </div>
   );
 }

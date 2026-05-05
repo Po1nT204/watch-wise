@@ -1,9 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { startAnalysis } from '@/server-actions/video';
-import { Brain, GraduationCap, Loader2, Sparkles } from 'lucide-react';
+import {
+  Brain,
+  CheckCircle2,
+  Cpu,
+  Download,
+  GraduationCap,
+  Loader2,
+  Mic,
+  Sparkles,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
@@ -20,6 +29,15 @@ import {
   AnalysisFocus,
   AnalysisMode,
 } from '@/shared/types';
+import { motion } from 'framer-motion';
+
+const PROCESSING_STEPS = [
+  { text: 'Подготовка среды...', icon: Loader2 },
+  { text: 'Извлечение медиапотока...', icon: Download },
+  { text: 'Распознавание речи (SpeechKit)...', icon: Mic },
+  { text: 'Генерация тестов (YandexGPT)...', icon: Cpu },
+  { text: 'Финализация результатов...', icon: Sparkles },
+];
 
 export function AnalysisControl({
   videoId,
@@ -29,6 +47,7 @@ export function AnalysisControl({
   status: string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
   const [mode, setMode] = useState<AnalysisMode>('student');
   const [difficulty, setDifficulty] = useState<AnalysisDifficulty>('medium');
   const [questionsCount, setQuestionsCount] = useState<number>(5);
@@ -36,6 +55,23 @@ export function AnalysisControl({
   const [focus, setFocus] = useState<AnalysisFocus>('theory');
 
   const router = useRouter();
+  const isProcessing = isLoading || status === 'PROCESSING';
+
+  useEffect(() => {
+    if (!isProcessing) {
+      setStepIndex(0);
+      return;
+    }
+
+    const intervals = [3000, 10000, 20000, 35000];
+    const timeouts = intervals.map((time) =>
+      setTimeout(() => {
+        setStepIndex((prev) => Math.min(prev + 1, PROCESSING_STEPS.length - 1));
+      }, time),
+    );
+
+    return () => timeouts.forEach(clearTimeout);
+  }, [isProcessing]);
 
   const handleStart = async () => {
     if (questionsCount < 1 || questionsCount > 20) {
@@ -47,7 +83,7 @@ export function AnalysisControl({
     const result = await startAnalysis(videoId, {
       mode,
       difficulty,
-      questionsCount: questionsCount,
+      questionsCount,
       audience,
       focus,
     });
@@ -61,16 +97,56 @@ export function AnalysisControl({
 
   if (status === 'COMPLETED')
     return (
-      <p className='text-sm text-green-600 font-medium text-center py-2'>
-        Анализ завершен успешно!
-      </p>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className='flex flex-col items-center justify-center py-6 bg-emerald-500/10 border border-emerald-500/20 rounded-xl'
+      >
+        <CheckCircle2 className='h-12 w-12 text-emerald-500 mb-2' />
+        <p className='text-emerald-600 font-bold'>Анализ успешно завершен!</p>
+        <p className='text-xs text-emerald-600/70'>
+          Материалы доступны во вкладках
+        </p>
+      </motion.div>
     );
-  if (status === 'PROCESSING')
+
+  if (isProcessing) {
+    const StepIcon = PROCESSING_STEPS[stepIndex].icon;
     return (
-      <div className='flex items-center justify-center gap-2 text-sm text-primary py-2'>
-        <Loader2 className='h-4 w-4 animate-spin' /> ИИ анализирует контент...
+      <div className='flex flex-col items-center justify-center p-8 bg-background border rounded-xl shadow-inner overflow-hidden relative'>
+        <div className='absolute inset-0 bg-primary/5 animate-pulse' />
+
+        <motion.div
+          key={stepIndex}
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -20, opacity: 0 }}
+          className='relative z-10 flex flex-col items-center'
+        >
+          <div className='p-4 bg-primary/10 rounded-full mb-4'>
+            <StepIcon
+              className={`h-8 w-8 text-primary ${StepIcon === Loader2 ? 'animate-spin' : 'animate-bounce'}`}
+            />
+          </div>
+          <h3 className='text-lg font-bold text-foreground text-center'>
+            {PROCESSING_STEPS[stepIndex].text}
+          </h3>
+          <div className='w-48 h-1.5 bg-muted rounded-full mt-4 overflow-hidden'>
+            <motion.div
+              className='h-full bg-primary'
+              initial={{
+                width: `${(stepIndex / PROCESSING_STEPS.length) * 100}%`,
+              }}
+              animate={{
+                width: `${((stepIndex + 1) / PROCESSING_STEPS.length) * 100}%`,
+              }}
+              transition={{ duration: 5, ease: 'linear' }}
+            />
+          </div>
+        </motion.div>
       </div>
     );
+  }
 
   return (
     <div className='flex flex-col gap-5'>
