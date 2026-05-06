@@ -15,19 +15,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface OverviewChartsProps {
   accuracy: number;
+  activityData: { name: string; xp: number }[];
 }
 
-const activityData = [
-  { name: 'Пн', xp: 120 },
-  { name: 'Вт', xp: 250 },
-  { name: 'Ср', xp: 180 },
-  { name: 'Чт', xp: 300 },
-  { name: 'Пт', xp: 450 },
-  { name: 'Сб', xp: 200 },
-  { name: 'Вс', xp: 500 },
-];
-
-export function OverviewCharts({ accuracy }: OverviewChartsProps) {
+export function OverviewCharts({
+  accuracy,
+  activityData,
+}: OverviewChartsProps) {
   const pieData = [
     { name: 'Верно', value: accuracy },
     { name: 'Ошибки', value: 100 - accuracy },

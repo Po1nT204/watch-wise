@@ -66,6 +66,12 @@ export const saveQuizResult = async (
           contentId,
         },
       }),
+      prisma.xpLog.create({
+        data: {
+          userId: session.user.id,
+          amount: earnedXp,
+        },
+      }),
       prisma.videoProgress.update({
         where: {
           userId_videoId: {
