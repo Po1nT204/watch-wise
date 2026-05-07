@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getUserDashboardStats } from '@/services/analytics';
+import {
+  getUserDashboardStats,
+  getXpActivityForLast7Days,
+} from '@/services/analytics';
 import prisma from '@/config/prisma';
 
 vi.mock('@/config/prisma', () => ({
@@ -10,6 +13,7 @@ vi.mock('@/config/prisma', () => ({
     flashcard: {
       count: vi.fn(),
     },
+    xpLog: { findMany: vi.fn() },
   },
 }));
 
@@ -46,6 +50,32 @@ describe('Analytics Service', () => {
     expect(stats.totalTests).toBe(0);
     expect(stats.accuracy).toBe(0);
     expect(stats.totalQuestions).toBe(0);
+  });
+
+  it('должен возвращать массив из 7 дней и корректно суммировать XP', async () => {
+    // Имитируем логи: 2 лога сегодня, 1 лог вчера
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    vi.mocked(prisma.xpLog.findMany).mockResolvedValue([
+      { id: '1', userId: 'user-1', amount: 10, createdAt: today },
+      { id: '2', userId: 'user-1', amount: 20, createdAt: today },
+      { id: '3', userId: 'user-1', amount: 50, createdAt: yesterday },
+    ] as never);
+
+    const result = await getXpActivityForLast7Days('user-1');
+
+    expect(result).toHaveLength(7);
+
+    const todayResult = result[6];
+    expect(todayResult.xp).toBe(30);
+
+    const yesterdayResult = result[5];
+    expect(yesterdayResult.xp).toBe(50);
+
+    const fiveDaysAgoResult = result[1];
+    expect(fiveDaysAgoResult.xp).toBe(0);
   });
 
   it('должен рассчитывать частичную точность', async () => {

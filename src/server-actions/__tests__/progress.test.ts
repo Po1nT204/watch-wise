@@ -8,6 +8,7 @@ vi.mock('@/config/prisma', () => ({
   default: {
     user: { findUnique: vi.fn(), update: vi.fn() },
     testResult: { create: vi.fn() },
+    xpLog: { create: vi.fn() },
     videoProgress: { update: vi.fn() },
     $transaction: vi.fn(async (arr) => Promise.all(arr)),
   },
@@ -45,12 +46,19 @@ describe('Server Actions: Progress', () => {
     expect(result.success).toBe(true);
     expect(result.earnedXp).toBe(25);
 
+    expect(prisma.xpLog.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'user-1',
+        amount: 25,
+      },
+    });
+
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: 'user-1' },
       data: {
         xp: 75,
         level: 1,
-        streak: 3, // Стрик остался 3
+        streak: 3,
         lastActiveAt: expect.any(Date),
       },
     });

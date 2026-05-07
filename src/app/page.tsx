@@ -10,7 +10,7 @@ export default async function Home() {
   const session = await auth();
 
   return (
-    <div className='flex min-h-screen flex-col selection:bg-primary selection:text-white'>
+    <div className='flex min-h-screen flex-col selection:bg-primary selection:text-white overflow-x-hidden'>
       <header className='fixed top-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none'>
         <nav className='flex h-16 w-full max-w-5xl items-center justify-between rounded-full border border-border/40 bg-background/60 px-6 backdrop-blur-xl shadow-sm pointer-events-auto'>
           <Link

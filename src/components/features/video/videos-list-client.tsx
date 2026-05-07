@@ -37,22 +37,21 @@ export function VideosListClient({ videos, allTags }: VideosListClientProps) {
   return (
     <Card className='border-none shadow-none bg-transparent'>
       <CardHeader className='px-0 flex flex-col gap-4'>
-        <div className='flex flex-col md:flex-row gap-4'>
+        <div className='flex flex-col lg:flex-row gap-4'>
           {/* Поиск */}
-          <div className='relative flex-1'>
+          <div className='relative flex-1 min-w-0 w-full'>
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
             <Input
               placeholder='Поиск видео...'
-              className='pl-9 bg-background shadow-sm'
+              className='pl-9 bg-background shadow-sm w-full'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          {/* Фильтры и сортировки */}
-          <div className='flex flex-wrap md:flex-nowrap gap-2'>
+          <div className='flex flex-wrap items-center gap-2 w-full lg:w-auto shrink-0'>
             <Select value={filterPlatform} onValueChange={setFilterPlatform}>
-              <SelectTrigger className='w-[140px] bg-background shadow-sm'>
+              <SelectTrigger className='w-full sm:w-[140px] flex-1 sm:flex-none bg-background shadow-sm'>
                 <SelectValue placeholder='Платформа' />
               </SelectTrigger>
               <SelectContent
@@ -67,7 +66,7 @@ export function VideosListClient({ videos, allTags }: VideosListClientProps) {
             </Select>
 
             <Select value={filterTag} onValueChange={setFilterTag}>
-              <SelectTrigger className='w-[140px] bg-background shadow-sm'>
+              <SelectTrigger className='w-full sm:w-[140px] flex-1 sm:flex-none bg-background shadow-sm'>
                 <SelectValue placeholder='Тег' />
               </SelectTrigger>
               <SelectContent
@@ -85,7 +84,7 @@ export function VideosListClient({ videos, allTags }: VideosListClientProps) {
             </Select>
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className='w-[150px] bg-background shadow-sm'>
+              <SelectTrigger className='w-full sm:w-[150px] flex-1 sm:flex-none bg-background shadow-sm'>
                 <SelectValue placeholder='Сортировка' />
               </SelectTrigger>
               <SelectContent
