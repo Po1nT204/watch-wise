@@ -1,7 +1,7 @@
 import { auth } from '@/config/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@/config/prisma';
-import { GlobalFlashcards } from '@/components/features/video/global-flashcards';
+import { GlobalFlashcards } from '@/components/features/video/flashcards/global-flashcards';
 
 export default async function FlashcardsPage() {
   const session = await auth();

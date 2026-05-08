@@ -1,10 +1,10 @@
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // --- NextAuth Models (Обязательно для OAuth) ---
@@ -35,6 +35,16 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model XpLog {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -63,7 +73,8 @@ model User {
   generations   GeneratedContent[]
   testResults   TestResult[]
   progress      VideoProgress[] // История просмотров
-  
+  xpLogs XpLog[]
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

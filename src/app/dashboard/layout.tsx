@@ -2,6 +2,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { auth } from '@/config/auth';
 import { redirect } from 'next/navigation';
+import prisma from '@/config/prisma';
 
 export default async function DashboardLayout({
   children,
@@ -9,7 +10,16 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
+  const user = session?.user;
+  let stats = { level: 1, streak: 0 };
 
+  if (user && user.id) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { level: true, streak: true },
+    });
+    if (dbUser) stats = dbUser;
+  }
   if (!session) {
     redirect('/login');
   }
@@ -22,10 +32,10 @@ export default async function DashboardLayout({
 
       <div className='flex flex-col sm:gap-4 sm:py-4 sm:pl-72'>
         <header className='sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6'>
-          <Header user={session.user || {}} />
+          <Header user={session.user || {}} stats={stats} />
         </header>
 
-        <main className='grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8'>
+        <main className='grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 min-w-0 w-full overflow-x-hidden'>
           {children}
         </main>
       </div>

@@ -12,28 +12,33 @@ import {
   CheckCircle2,
   LibraryBig,
   PlayCircle,
-  Target,
+  Flame,
   Zap,
 } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { getVideosByUserId } from '@/services/video';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { getUserDashboardStats } from '@/services/analytics';
+import {
+  getUserDashboardStats,
+  getXpActivityForLast7Days,
+} from '@/services/analytics';
 import prisma from '@/config/prisma';
+import { OverviewCharts } from '@/components/features/dashboard/overview-charts';
 
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
 
-  const [allVideos, stats] = await Promise.all([
+  const [allVideos, stats, activityData] = await Promise.all([
     getVideosByUserId(session.user.id),
     getUserDashboardStats(session.user.id),
+    getXpActivityForLast7Days(session.user.id),
   ]);
 
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { xp: true, level: true },
+    select: { xp: true, level: true, streak: true },
   });
 
   const recentVideos = allVideos.slice(0, 3);
@@ -112,15 +117,13 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Точность ответов
-            </CardTitle>
-            <Target className='h-4 w-4 text-muted-foreground' />
+            <CardTitle className='text-sm font-medium'>Ударный режим</CardTitle>
+            <Flame className='h-4 w-4 text-orange-500' />
           </CardHeader>
           <CardContent>
-            <div className='text-3xl font-bold'>{stats.accuracy}%</div>
+            <div className='text-3xl font-bold'>{dbUser?.streak || 0} дн.</div>
             <p className='text-xs text-muted-foreground mt-1'>
-              Средний балл успеваемости
+              Дней обучения подряд
             </p>
           </CardContent>
         </Card>
@@ -139,16 +142,13 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
+      <OverviewCharts accuracy={stats.accuracy} activityData={activityData} />
+
       {/* --- ПОСЛЕДНИЕ ВИДЕО --- */}
       <div className='grid gap-4 md:gap-8'>
         <Card className='border-none shadow-none bg-transparent'>
           <CardHeader className='px-0 flex flex-row items-center justify-between'>
-            <div>
-              <CardTitle>Недавние материалы</CardTitle>
-              <CardDescription>
-                Продолжите обучение с того места, где остановились.
-              </CardDescription>
-            </div>
+            <CardTitle>Недавние материалы</CardTitle>
             <Button variant='ghost' className='text-primary font-bold' asChild>
               <Link href='/dashboard/videos'>
                 Смотреть все <ArrowRight className='ml-2 h-4 w-4' />
@@ -163,9 +163,22 @@ export default async function DashboardPage() {
                   href={`/dashboard/video/${video.id}`}
                   className='group block'
                 >
-                  <Card className='hover:border-primary transition-colors overflow-hidden'>
-                    <div className='aspect-video bg-muted relative flex items-center justify-center'>
-                      <PlayCircle className='h-10 w-10 text-muted-foreground group-hover:text-primary transition-colors' />
+                  <Card className='hover:border-primary transition-all overflow-hidden shadow-sm hover:shadow-md'>
+                    <div className='aspect-video bg-muted relative overflow-hidden'>
+                      {video.thumbnail ? (
+                        <img
+                          src={video.thumbnail}
+                          alt={video.title || ''}
+                          className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-500'
+                        />
+                      ) : (
+                        <div className='w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-primary/10'>
+                          <PlayCircle className='h-10 w-10 text-muted-foreground group-hover:text-primary transition-colors' />
+                        </div>
+                      )}
+                      <div className='absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center'>
+                        <PlayCircle className='text-white h-12 w-12' />
+                      </div>
                     </div>
                     <CardHeader className='p-4'>
                       <CardTitle className='text-sm truncate'>

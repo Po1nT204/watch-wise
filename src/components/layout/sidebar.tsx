@@ -10,6 +10,7 @@ import {
   Video,
   LibraryBig,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const routes = [
   {
@@ -40,14 +41,16 @@ export const Sidebar = () => {
   return (
     <div className='flex h-full max-h-screen flex-col gap-2'>
       <div className='flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6'>
-        <Link href='/' className='flex items-center gap-2 font-semibold'>
-          <Video className='h-6 w-6' />
-          <span className=''>WatchWise</span>
+        <Link href='/' className='flex items-center gap-2 font-bold group'>
+          <div className='bg-primary/10 p-2 rounded-lg group-hover:bg-primary/20 transition-colors'>
+            <Video className='h-5 w-5 text-primary' />
+          </div>
+          <span className='tracking-tight'>WatchWise</span>
         </Link>
       </div>
 
-      <div className='flex-1'>
-        <nav className='grid items-start px-2 text-sm font-medium lg:px-4'>
+      <div className='flex-1 overflow-y-auto py-4'>
+        <nav className='grid items-start px-2 text-sm font-medium lg:px-4 gap-1'>
           {routes.map((route) => {
             const isActive = pathname === route.href;
 
@@ -56,14 +59,29 @@ export const Sidebar = () => {
                 key={route.href}
                 href={route.href}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary',
+                  'relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all group overflow-hidden',
                   isActive
-                    ? 'bg-muted text-primary'
-                    : 'text-muted-foreground hover:bg-muted',
+                    ? 'text-primary font-semibold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
                 )}
               >
-                <route.icon className='h-4 w-4' />
-                {route.label}
+                {isActive && (
+                  <motion.div
+                    layoutId='sidebar-active-indicator'
+                    className='absolute inset-0 bg-primary/10 border border-primary/20 rounded-xl'
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
+
+                <route.icon
+                  className={cn(
+                    'h-4 w-4 relative z-10 transition-transform duration-200',
+                    isActive
+                      ? 'text-primary scale-110'
+                      : 'group-hover:scale-110 group-hover:text-foreground',
+                  )}
+                />
+                <span className='relative z-10'>{route.label}</span>
               </Link>
             );
           })}
