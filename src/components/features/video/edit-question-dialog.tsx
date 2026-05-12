@@ -65,7 +65,6 @@ export function EditQuestionDialog({
   });
 
   const onSubmit = (values: FormValues) => {
-    // Преобразуем данные в формат, который ожидает серверный экшен (числа и плоский массив)
     const payload = {
       id: values.id,
       videoId: values.videoId,

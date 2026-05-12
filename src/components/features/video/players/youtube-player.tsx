@@ -26,7 +26,6 @@ export function YoutubePlayer({
     setOrigin(window.location.origin);
   }, []);
 
-  // 1. Перемотка
   useEffect(() => {
     if (seekToTime !== null && iframeRef.current && isReady) {
       iframeRef.current.contentWindow?.postMessage(
@@ -45,7 +44,6 @@ export function YoutubePlayer({
     }
   }, [seekToTime, isReady, onSeekComplete]);
 
-  // 2. Опрос прогресса
   useEffect(() => {
     if (!isReady) return;
 
@@ -85,7 +83,6 @@ export function YoutubePlayer({
     };
   }, [isReady, onProgress]);
 
-  // 3. Пауза
   useEffect(() => {
     if (isReady && iframeRef.current) {
       const command = isPaused ? 'pauseVideo' : 'playVideo';
@@ -96,7 +93,7 @@ export function YoutubePlayer({
     }
   }, [isPaused, isReady]);
 
-  if (!origin) return null; // Предотвращаем SSR hydration mismatch
+  if (!origin) return null;
 
   return (
     <div className='relative aspect-video overflow-hidden rounded-xl border bg-black shadow-sm'>

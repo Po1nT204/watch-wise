@@ -15,7 +15,7 @@ export const authConfig = {
 
       if (isOnDashboard) {
         if (isLoggedIn) return true;
-        return false; // Redirect to login
+        return false;
       }
 
       if (isOnAuth) {

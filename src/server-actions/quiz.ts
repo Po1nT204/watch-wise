@@ -26,7 +26,6 @@ export const updateQuizQuestion = async (
     validatedFields.data;
 
   try {
-    // Безопасность: проверяем, существует ли вопрос и принадлежит ли он пользователю
     const question = await prisma.quizQuestion.findUnique({
       where: { id },
       include: { content: true },
@@ -72,7 +71,6 @@ export const deleteQuizQuestion = async (id: string, videoId: string) => {
   if (!session?.user?.id) return { error: 'Не авторизован' };
 
   try {
-    // Безопасность: проверка прав владения перед удалением
     const question = await prisma.quizQuestion.findUnique({
       where: { id },
       include: { content: true },

@@ -19,7 +19,6 @@ export function Html5Player({
 }: Html5PlayerProps) {
   const htmlVideoRef = useRef<HTMLVideoElement>(null);
 
-  // 1. Управление паузой/воспроизведением
   useEffect(() => {
     if (!htmlVideoRef.current) return;
     if (isPaused) {
@@ -29,7 +28,6 @@ export function Html5Player({
     }
   }, [isPaused]);
 
-  // 2. Управление перемоткой (seek)
   useEffect(() => {
     if (htmlVideoRef.current && seekToTime !== null) {
       htmlVideoRef.current.currentTime = seekToTime;

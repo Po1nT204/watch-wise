@@ -7,7 +7,6 @@ export class VideoDownloader {
   private static ytdlp = new YtDlp();
 
   static async extractAudio(url: string, videoId: string): Promise<string> {
-    // Создаем временную папку, если её нет
     const tempDir = path.join(process.cwd(), 'temp-audio');
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
@@ -21,7 +20,6 @@ export class VideoDownloader {
         .extractAudio()
         .audioFormat('mp3')
         .output(tempDir)
-        // Настраиваем имя выходного файла через шаблон yt-dlp
         .setOutputTemplate(path.join(tempDir, `${videoId}.%(ext)s`))
         .run();
 
@@ -48,7 +46,6 @@ export class VideoDownloader {
 
       await new YtDlp()
         .download(url)
-        // Ищем лучшее качество, но не выше заданного height
         .format(`best[height<=${height}][ext=mp4]/best[height<=${height}]`)
         .output(tempDir)
         .setOutputTemplate(path.join(tempDir, `${videoId}.mp4`))

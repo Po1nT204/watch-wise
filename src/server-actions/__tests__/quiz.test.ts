@@ -27,10 +27,9 @@ describe('Server Actions: Quiz', () => {
         user: { id: 'user-1' },
       } as never);
 
-      // В базе вопрос принадлежит 'user-2'
       vi.mocked(prisma.quizQuestion.findUnique).mockResolvedValue({
         id: 'q-1',
-        content: { userId: 'user-2' }, // ЧУЖОЙ КОНТЕНТ
+        content: { userId: 'user-2' },
       } as unknown as QuizQuestion & { content: { userId: string } });
 
       const result = await updateQuizQuestion({
@@ -52,7 +51,7 @@ describe('Server Actions: Quiz', () => {
       } as never);
       vi.mocked(prisma.quizQuestion.findUnique).mockResolvedValue({
         id: 'q-1',
-        content: { userId: 'user-1' }, // СВОЙ КОНТЕНТ
+        content: { userId: 'user-1' },
       } as unknown as QuizQuestion & { content: { userId: string } });
       vi.mocked(prisma.quizQuestion.update).mockResolvedValue(
         {} as QuizQuestion,

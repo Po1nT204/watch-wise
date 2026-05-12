@@ -53,7 +53,6 @@ describe('Analytics Service', () => {
   });
 
   it('должен возвращать массив из 7 дней и корректно суммировать XP', async () => {
-    // Имитируем логи: 2 лога сегодня, 1 лог вчера
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);

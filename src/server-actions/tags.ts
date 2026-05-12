@@ -36,7 +36,7 @@ export const createTag = async (name: string, color?: string) => {
     const tag = await prisma.tag.create({
       data: {
         name: name.trim(),
-        color: color || '#6366f1', // Дефолтный цвет (indigo-500)
+        color: color || '#6366f1',
         userId: session.user.id,
       },
     });
@@ -58,7 +58,7 @@ export const deleteTag = async (tagId: string) => {
     await prisma.tag.delete({
       where: {
         id: tagId,
-        userId: session.user.id, // Защита: удаляем только если тег принадлежит юзеру
+        userId: session.user.id,
       },
     });
     revalidatePath('/dashboard/videos');
@@ -85,7 +85,6 @@ export const toggleVideoTag = async (
       ? { connect: { id: tagId } }
       : { disconnect: { id: tagId } };
 
-    // Мы привязываем тег к VideoProgress, так как это связь конкретного юзера с видео
     await prisma.videoProgress.update({
       where: {
         userId_videoId: {

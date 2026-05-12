@@ -23,7 +23,7 @@ export class S3Service {
 
     const fileContent = fs.readFileSync(filePath);
     const key = `audio/${videoId}.mp3`;
-    const client = this.getClient(); // Создаем клиент здесь
+    const client = this.getClient();
 
     try {
       logger.info(

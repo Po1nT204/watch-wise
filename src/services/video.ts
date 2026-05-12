@@ -30,7 +30,6 @@ export const getVideosByUserId = async (userId: string) => {
       orderBy: {
         createdAt: 'desc',
       },
-      // Можем сразу подгрузить статус прогресса для этого юзера, чтобы показать на карточке
       include: {
         progress: {
           where: {
@@ -106,12 +105,10 @@ export const deleteVideoFromUser = async (videoId: string, userId: string) => {
   try {
     logger.info({ videoId, userId }, 'Starting DELETE VIDEO from DB');
     return await prisma.$transaction(async (tx) => {
-      // 1. Удаляем прогресс
       await tx.videoProgress.deleteMany({
         where: { videoId, userId },
       });
 
-      // 2. Удаляем сгенерированный контент (каскад удалит вопросы и карточки)
       await tx.generatedContent.deleteMany({
         where: { videoId, userId },
       });
@@ -160,7 +157,6 @@ export const addVideoToLibrary = async (
     }
   }
 
-  // Создаем или обновляем видео в глобальной базе
   const video = await prisma.video.upsert({
     where: { url },
     update: {},
@@ -174,7 +170,6 @@ export const addVideoToLibrary = async (
     },
   });
 
-  // Привязываем видео к конкретному пользователю
   await prisma.videoProgress.upsert({
     where: {
       userId_videoId: { userId, videoId: video.id },

@@ -21,17 +21,15 @@ export class YoutubeService {
         throw new Error('Транскрипт пуст или не найден');
       }
 
-      // 1. Сохраняем чанки в БД (используем транзакцию для надежности)
       await prisma.transcriptChunk.createMany({
         data: transcriptItems.map((item) => ({
           videoId: videoId,
-          startTime: item.offset / 1000, // Конвертируем мс в сек
+          startTime: item.offset / 1000,
           endTime: (item.offset + item.duration) / 1000,
           text: item.text,
         })),
       });
 
-      // 2. Формируем строку для AI: [0s] текст [15s] текст...
       const fullTextWithTimestamps = transcriptItems
         .map((item) => `[${Math.floor(item.offset / 1000)}s] ${item.text}`)
         .join(' ');

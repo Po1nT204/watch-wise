@@ -58,7 +58,7 @@ export const AIGeneratedContentSchema = z.object({
 
 export const EditQuestionSchema = z.object({
   id: z.string().min(1),
-  videoId: z.string().min(1), // Передаем ID видео для точечной ревалидации кэша
+  videoId: z.string().min(1),
   text: z.string().min(3, { message: 'Текст вопроса слишком короткий' }),
   timestamp: z.number().nonnegative(),
   options: z
@@ -74,7 +74,7 @@ export const EditFormSchema = z.object({
   id: z.string(),
   videoId: z.string(),
   text: z.string().min(3, 'Слишком короткий вопрос'),
-  timestamp: z.union([z.string(), z.number()]), // Input возвращает строку
+  timestamp: z.union([z.string(), z.number()]),
   options: z
     .array(
       z.object({
@@ -82,7 +82,7 @@ export const EditFormSchema = z.object({
       }),
     )
     .min(2, 'Минимум 2 варианта ответа'),
-  correctIdx: z.string(), // RadioGroup возвращает строку
+  correctIdx: z.string(),
   explanation: z.string().optional(),
 });
 

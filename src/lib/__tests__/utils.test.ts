@@ -8,7 +8,6 @@ describe('General Utils', () => {
     });
 
     it('должен разрешать конфликты Tailwind классов', () => {
-      // px-2 должно перезаписаться на px-4
       expect(cn('px-2 py-1', 'px-4')).toBe('py-1 px-4');
     });
   });

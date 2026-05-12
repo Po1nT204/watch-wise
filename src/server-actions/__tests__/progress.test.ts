@@ -30,7 +30,6 @@ describe('Server Actions: Progress', () => {
       user: { id: 'user-1' },
     } as never);
 
-    // Имитируем, что юзер уже был активен сегодня
     const today = new Date();
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 'user-1',
@@ -40,7 +39,6 @@ describe('Server Actions: Progress', () => {
       lastActiveAt: today,
     } as User);
 
-    // 2 правильных ответа = 2 * 10 (XP_PER_CORRECT) + 5 (BONUS) = 25 XP
     const result = await saveQuizResult('content-1', 'video-1', 2, 5);
 
     expect(result.success).toBe(true);
@@ -69,7 +67,6 @@ describe('Server Actions: Progress', () => {
       user: { id: 'user-1' },
     } as never);
 
-    // Вчерашний день
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
 
@@ -83,7 +80,6 @@ describe('Server Actions: Progress', () => {
 
     await saveQuizResult('content-1', 'video-1', 2, 5);
 
-    // Стрик должен увеличиться до 4
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ streak: 4 }),
@@ -96,7 +92,6 @@ describe('Server Actions: Progress', () => {
       user: { id: 'user-1' },
     } as never);
 
-    // 3 дня назад
     const pastDate = new Date();
     pastDate.setDate(pastDate.getDate() - 3);
 
@@ -110,7 +105,6 @@ describe('Server Actions: Progress', () => {
 
     await saveQuizResult('content-1', 'video-1', 2, 5);
 
-    // Стрик сбросился
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ streak: 1 }),
@@ -123,7 +117,6 @@ describe('Server Actions: Progress', () => {
       user: { id: 'user-1' },
     } as never);
 
-    // Текущий XP 90. Получаем 25. Итого 115. Порог уровня (APP_CONFIG.GAMIFICATION.XP_PER_LEVEL) = 100. Новый уровень = 2.
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 'user-1',
       xp: 90,
