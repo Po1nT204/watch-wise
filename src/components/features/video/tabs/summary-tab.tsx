@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import Markdown from 'react-markdown';
 import { formatDisplayTime, parseTimestamp } from '@/lib/time-utils';
 import { Flashcard, TranscriptChunk } from '@/shared/types';
+import { FeedbackBlock } from '../feedback-block';
 
 interface SummaryTabProps {
   summary: string | undefined;
@@ -12,6 +13,7 @@ interface SummaryTabProps {
   videoStatus: string;
   onTimestampClick: (time: number) => void;
   onTermClick: (term: string) => void;
+  generatedContentId: string | undefined;
 }
 
 export function SummaryTab({
@@ -21,6 +23,7 @@ export function SummaryTab({
   videoStatus,
   onTimestampClick,
   onTermClick,
+  generatedContentId,
 }: SummaryTabProps) {
   const termsRegex = useMemo(() => {
     if (!flashcards || flashcards.length === 0) return null;
@@ -109,6 +112,9 @@ export function SummaryTab({
             >
               {summary}
             </Markdown>
+            {generatedContentId && (
+              <FeedbackBlock generatedContentId={generatedContentId} />
+            )}
           </div>
         ) : transcript.length > 0 ? (
           <div className='space-y-4 text-muted-foreground'>
