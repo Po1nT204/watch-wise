@@ -90,3 +90,9 @@ export const SignInSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
+
+export const AiFeedbackSchema = z.object({
+  generatedContentId: z.string().min(1),
+  isLiked: z.boolean(),
+  comment: z.string().max(1000).optional().nullable(),
+});

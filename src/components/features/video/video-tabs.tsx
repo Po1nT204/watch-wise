@@ -104,6 +104,7 @@ export function VideoTabs({ video, onTimestampClick }: VideoTabsProps) {
               videoStatus={video.status}
               onTimestampClick={onTimestampClick}
               onTermClick={handleTermClick}
+              generatedContentId={content?.id}
             />
           </Card>
         </TabsContent>

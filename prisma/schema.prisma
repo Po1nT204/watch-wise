@@ -74,6 +74,7 @@ model User {
   testResults   TestResult[]
   progress      VideoProgress[] // История просмотров
   xpLogs XpLog[]
+  aiFeedbacks   AiFeedback[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -172,6 +173,7 @@ model GeneratedContent {
   flashcards  Flashcard[]
   questions   QuizQuestion[]
   testResults TestResult[]
+  feedbacks   AiFeedback[]
 
   @@index([videoId, userId]) // Для быстрого получения контента юзера по видео
 }
@@ -222,4 +224,19 @@ model TranscriptChunk {
   video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
   @@index([videoId]) // Индекс для быстрого поиска субтитров к видео
+}
+
+model AiFeedback {
+  id               String           @id @default(cuid())
+  isLiked          Boolean          
+  comment          String?          @db.Text
+  createdAt        DateTime         @default(now())
+  
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  generatedContentId String
+  generatedContent   GeneratedContent @relation(fields: [generatedContentId], references: [id], onDelete: Cascade)
+
+  @@index([generatedContentId])
 }
