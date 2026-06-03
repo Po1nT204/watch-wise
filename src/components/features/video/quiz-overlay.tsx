@@ -2,8 +2,8 @@
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, PlayCircle, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import { CheckCircle2, PlayCircle, XCircle, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { QuizQuestion } from '@/shared/types';
@@ -17,9 +17,29 @@ interface QuizOverlayProps {
 }
 
 export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
+  const SECONDS_LIMIT = 30;
+  const [timeLeft, setTimeLeft] = useState(SECONDS_LIMIT);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { width, height } = useWindowSize();
+
+  useEffect(() => {
+    if (isSubmitted) return;
+
+    if (timeLeft <= 0) {
+      setIsSubmitted(true);
+      const timeout = setTimeout(() => {
+        onAnswer(false);
+      }, 1500);
+      return () => clearTimeout(timeout);
+    }
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timeLeft, isSubmitted, onAnswer]);
 
   const handleCheck = (idx: number) => {
     if (isSubmitted) return;
@@ -34,10 +54,11 @@ export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
   };
 
   const options = question.options as string[];
+  const progressPercentage = (timeLeft / SECONDS_LIMIT) * 100;
 
   return (
     <div className='fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300'>
-      {isSubmitted && isCorrectAnswer && (
+      {isSubmitted && selectedIdx !== null && isCorrectAnswer && (
         <Confetti
           width={width}
           height={height}
@@ -58,15 +79,52 @@ export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
             <div
               className={cn(
                 'absolute inset-0 opacity-5 pointer-events-none transition-colors duration-1000',
-                isCorrectAnswer ? 'bg-emerald-500' : 'bg-destructive',
+                selectedIdx === null
+                  ? 'bg-destructive'
+                  : isCorrectAnswer
+                    ? 'bg-emerald-500'
+                    : 'bg-destructive',
               )}
             />
           )}
 
-          <div className='mb-6 shrink-0 relative z-10'>
-            <div className='inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-4 border border-primary/20'>
+          {!isSubmitted && (
+            <div className='absolute top-0 left-0 h-1 bg-muted w-full shrink-0'>
+              <div
+                className={cn(
+                  'h-full transition-all duration-1000 ease-linear',
+                  timeLeft <= 10 ? 'bg-destructive' : 'bg-primary',
+                )}
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+          )}
+
+          <div className='mb-6 shrink-0 relative z-10 flex items-center justify-between gap-4'>
+            <div className='inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider border border-primary/20'>
               Умная пауза
             </div>
+
+            {!isSubmitted ? (
+              <div
+                className={cn(
+                  'flex items-center gap-1.5 text-xs font-mono font-bold',
+                  timeLeft <= 10
+                    ? 'text-destructive animate-pulse'
+                    : 'text-muted-foreground',
+                )}
+              >
+                <Clock className='h-3.5 w-3.5' />
+                {timeLeft} сек.
+              </div>
+            ) : selectedIdx === null && timeLeft <= 0 ? (
+              <div className='text-xs font-bold text-destructive uppercase tracking-wider animate-bounce'>
+                Время истекло!
+              </div>
+            ) : null}
+          </div>
+
+          <div className='mb-6 shrink-0 relative z-10'>
             <h3 className='text-xl md:text-2xl font-bold leading-snug'>
               {question.text}
             </h3>
@@ -151,7 +209,7 @@ export function QuizOverlay({ question, onAnswer }: QuizOverlayProps) {
                   onClick={handleContinue}
                   className={cn(
                     'w-full font-bold shadow-lg mt-2 mb-2',
-                    isCorrectAnswer
+                    selectedIdx !== null && isCorrectAnswer
                       ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
                       : 'bg-primary',
                   )}
